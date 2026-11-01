@@ -5,325 +5,794 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b21">
+
 <title>EDEX | Ball Game Admin</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
 <style>
-.edex-tabs{
-  width:min(1200px,calc(100% - 40px));
-  margin:12px auto 15px;
+:root {
+  color-scheme:dark;
+  --bg:#0b0b23;
+  --panel:#201c38;
+  --border:#62527b;
+  --text:#faf5ff;
+  --muted:#b9b0cc;
+  --gold:#ffdc96;
+  --purple:#c7a6ff;
+  --red:#ff9bac;
+}
+
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  min-height:100vh;
+  font-family:Outfit,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(
+      ellipse at 55% 10%,
+      #4a336d 0%,
+      #17132f 48%,
+      #0b0b23 100%
+    );
+}
+
+[hidden] {
+  display:none!important;
+}
+
+button,input,select,textarea {
+  font:inherit;
+}
+
+button {
+  cursor:pointer;
+}
+
+button:disabled {
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+a {
+  text-decoration:none;
+}
+
+.main-wrap {
+  width:min(1160px,calc(100% - 32px));
+  margin:0 auto;
+  padding-bottom:60px;
+}
+
+/* HEADER */
+
+.header {
+  padding:25px 0 16px;
+}
+
+.logo {
+  color:var(--gold);
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:3px;
+}
+
+.logo small {
+  display:block;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:3px;
+}
+
+/* THREE ADMIN TABS */
+
+.edex-tabs {
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:12px;
-  position:relative;
-  z-index:10;
+  margin:15px 0;
 }
-.edex-tabs a{
+
+.edex-tabs a {
   display:flex;
   align-items:center;
   justify-content:center;
-  min-height:52px;
-  padding:12px;
-  text-align:center;
-  background:#49345f;
-  color:#f7ecff;
-  border:1px solid #81659d;
+  padding:15px 10px;
+  min-height:54px;
+  border:1px solid #8a70a6;
   border-radius:13px;
-  text-decoration:none;
-  font:900 14px Outfit,Arial,sans-serif;
-}
-.edex-tabs a:hover{background:#675080}
-.edex-tabs a.active{
-  background:linear-gradient(110deg,#ffe2a1,#f4ca74);
-  color:#291b0c;
-  border-color:#ffe5a9;
-  box-shadow:0 4px 20px #ffd77f30;
-}
-.visitor-action{
-  max-width:1200px;
-  margin:0 auto 25px;
-  padding:0 20px;
+  background:#453357;
+  color:#f8eaff;
+  font-weight:900;
+  font-size:14px;
   text-align:center;
-  position:relative;
-  z-index:10;
 }
-.visitor-action a{
+
+.edex-tabs a:hover {
+  background:#674d81;
+}
+
+.edex-tabs a.active {
+  background:
+    linear-gradient(110deg,#ffe5ad,#edbf68);
+  color:#291c0b;
+  border-color:#ffe5ad;
+  box-shadow:0 5px 25px #eebd6430;
+}
+
+/* VISITOR SCREEN BUTTON */
+
+.visitor-link {
+  display:flex;
+  justify-content:center;
+  margin:17px 0 28px;
+}
+
+.visitor-link a {
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:min(100%,470px);
+  width:min(100%,480px);
   min-height:54px;
-  padding:14px 20px;
-  background:linear-gradient(110deg,#f7d995,#e9b961);
-  border:1px solid #ffe3a5;
+  padding:15px 18px;
   border-radius:14px;
-  color:#251808;
-  font:900 15px Outfit,Arial,sans-serif;
-  text-decoration:none;
-  box-shadow:0 9px 25px #d19a4230;
+  background:
+    linear-gradient(110deg,#ffe5ad,#edbf68);
+  border:1px solid #ffe5ad;
+  color:#291c0b;
+  font-size:15px;
+  font-weight:900;
+  text-align:center;
 }
-.visitor-action a:hover{filter:brightness(1.08)}
-@media(max-width:650px){
-  .edex-tabs{gap:6px}
-  .edex-tabs a{
+
+.visitor-link a:hover {
+  filter:brightness(1.08);
+}
+
+/* PANELS */
+
+.panel {
+  border:1px solid #574968;
+  background:
+    linear-gradient(145deg,#292240,#17152e);
+  border-radius:21px;
+  padding:24px;
+  margin:15px 0;
+  box-shadow:0 12px 34px #0003;
+}
+
+.eyebrow {
+  color:#cfb0f8;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:3px;
+}
+
+h1 {
+  font-size:clamp(34px,5vw,52px);
+  line-height:1.1;
+  margin:12px 0;
+}
+
+h1 em {
+  color:var(--gold);
+  font-style:normal;
+}
+
+h2 {
+  margin:0 0 12px;
+  font-size:20px;
+}
+
+p {
+  color:var(--muted);
+  line-height:1.6;
+}
+
+.muted {
+  color:var(--muted);
+}
+
+.top-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
+.btn {
+  padding:12px 16px;
+  min-height:45px;
+  border-radius:11px;
+  border:1px solid transparent;
+  color:#f9f3ff;
+  background:#584477;
+  font-size:13px;
+  font-weight:900;
+}
+
+.btn:hover:not(:disabled) {
+  filter:brightness(1.1);
+}
+
+.btn-gold {
+  background:#ffdc96;
+  border-color:#ffdc96;
+  color:#30200f;
+}
+
+.btn-outline {
+  background:#3b3053;
+  border-color:#76648f;
+}
+
+.btn-red {
+  background:#83334d;
+  border-color:#d36d83;
+  color:#ffe8ec;
+}
+
+/* LOGIN */
+
+.login {
+  max-width:460px;
+  margin:30px auto;
+}
+
+label {
+  display:block;
+  color:#e9dcfc;
+  font-weight:800;
+  margin:15px 0 7px;
+}
+
+input,textarea,select {
+  width:100%;
+  padding:13px 14px;
+  color:white;
+  background:#101025;
+  border:1px solid #655778;
+  border-radius:11px;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline:2px solid #bb9af4;
+}
+
+textarea {
+  min-height:110px;
+  resize:vertical;
+}
+
+.login .btn {
+  width:100%;
+  margin-top:15px;
+}
+
+.message {
+  color:#d7c4f4;
+  font-size:13px;
+  line-height:1.6;
+  min-height:20px;
+  margin:12px 0;
+}
+
+.message.error {
+  color:#ff9bac;
+}
+
+/* STATISTICS */
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:13px;
+  margin:19px 0;
+}
+
+.stat {
+  margin:0;
+  min-height:140px;
+}
+
+.stat small {
+  color:#d0c2e6;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+.stat strong {
+  display:block;
+  margin-top:15px;
+  font-size:43px;
+  color:#f9f4ff;
+  font-variant-numeric:tabular-nums;
+}
+
+.stat.chocolate {
+  border-color:#937441;
+  background:
+    linear-gradient(135deg,#48331e,#1f1a2d);
+}
+
+.stat.chocolate strong {
+  color:var(--gold);
+}
+
+/* GRID */
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+}
+
+.grid .panel {
+  margin:0;
+}
+
+.inventory {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:18px 0;
+}
+
+.inventory div {
+  border:1px solid #504361;
+  background:#13122a;
+  border-radius:13px;
+  padding:16px;
+}
+
+.inventory small {
+  color:#bcaecf;
+  font-size:11px;
+  font-weight:900;
+}
+
+.inventory strong {
+  display:block;
+  margin-top:7px;
+  font-size:35px;
+  color:var(--gold);
+}
+
+.field-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:15px;
+}
+
+.field-actions button {
+  flex:1;
+}
+
+/* HISTORY */
+
+.history-actions {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.history-actions button {
+  min-width:150px;
+}
+
+.table-wrap {
+  width:100%;
+  max-height:450px;
+  overflow:auto;
+  border:1px solid #514262;
+  border-radius:12px;
+  margin-top:15px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:680px;
+}
+
+th,td {
+  padding:13px;
+  border-bottom:1px solid #413751;
+  text-align:left;
+  font-size:13px;
+}
+
+th {
+  position:sticky;
+  top:0;
+  background:#35284d;
+  color:#e7d4ff;
+  font-size:11px;
+}
+
+td {
+  color:#e7dcf4;
+}
+
+.reset-help {
+  font-size:12px;
+  border-left:3px solid #d99b61;
+  padding-left:12px;
+  margin-top:15px;
+}
+
+footer {
+  text-align:center;
+  padding:25px;
+  font-size:11px;
+  color:#9285a5;
+  letter-spacing:2px;
+}
+
+@media(max-width:850px) {
+  .stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .grid {
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:550px) {
+  .edex-tabs {
+    gap:6px;
+  }
+
+  .edex-tabs a {
+    padding:11px 5px;
     font-size:11px;
-    padding:10px 4px;
-    min-height:48px;
+  }
+
+  .panel {
+    padding:17px;
+  }
+
+  .stat strong {
+    font-size:34px;
+  }
+
+  .history-actions button {
+    width:100%;
   }
 }
 </style>
 </head>
 
 <body>
-<div class="aurora"></div>
-<div class="dust"></div>
 
-<header class="topbar">
-  <a class="brand" href="admin.html">
-    <span class="gem">✦</span>
-    <span>
-      EDEX
+<div class="main-wrap">
+
+  <!-- HEADER -->
+
+  <header class="header">
+    <div class="logo">
+      ✦ EDEX
       <small>BALL GAME CONTROL CENTER</small>
-    </span>
-  </a>
-</header>
+    </div>
+  </header>
 
-<!-- ALL THREE ADMIN TABS -->
+  <!-- ALL THREE ADMIN TABS -->
 
-<nav class="edex-tabs" aria-label="EDEX Admin pages">
+  <nav class="edex-tabs"
+       aria-label="EDEX admin navigation">
 
-  <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
-    ✦ Quiz Admin
-  </a>
+    <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
+      ✦ Quiz Admin
+    </a>
 
-  <a class="active" aria-current="page"
-     href="https://freshlook10-alt.github.io/Edex-Word-Portal/admin.html">
-    ◈ Ball Game Admin
-  </a>
+    <a href="https://freshlook10-alt.github.io/Edex-Word-Portal/admin.html"
+       class="active"
+       aria-current="page">
+      ◈ Ball Game Admin
+    </a>
 
-  <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
-    ⏱ Timer Admin
-  </a>
+    <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
+      ⏱ Timer Admin
+    </a>
 
-</nav>
+  </nav>
 
-<!-- VISIBLE VISITOR BUTTON INSIDE BALL ADMIN -->
+  <!-- OPEN VISITOR PAGE IN NEW TAB -->
 
-<div class="visitor-action">
-  <a href="https://freshlook10-alt.github.io/Edex-Word-Portal/"
-     target="_blank"
-     rel="noopener noreferrer">
-    ↗ OPEN BALL VISITOR / ORGANIZER
-  </a>
-</div>
+  <div class="visitor-link">
 
-<main class="dashboard">
+    <a href="https://freshlook10-alt.github.io/Edex-Word-Portal/"
+       target="_blank"
+       rel="noopener noreferrer">
+      ↗ OPEN BALL VISITOR / ORGANIZER
+    </a>
 
-  <!-- ORGANIZER LOGIN -->
+  </div>
 
-  <section class="panel auth-box" id="adminLogin">
+  <!-- LOGIN -->
+
+  <section id="adminLogin"
+           class="panel login">
 
     <div class="eyebrow">
-      ✦ PRIVATE ORGANIZER ACCESS
+      ✦ ORGANIZER ACCESS
     </div>
 
-    <h1>Control <em>Center.</em></h1>
+    <h1>
+      Ball <em>Admin.</em>
+    </h1>
 
     <p>
-      Sign in to view Ball Throwing results
-      and organizer settings.
+      Sign in with your existing
+      Ball Game organizer account.
     </p>
 
     <form id="loginForm">
 
+      <label for="email">Email</label>
+
       <input id="email"
              type="email"
-             placeholder="Organizer email"
              autocomplete="username"
              required>
 
+      <label for="password">Password</label>
+
       <input id="password"
              type="password"
-             placeholder="Password"
              autocomplete="current-password"
              required>
 
-      <button class="btn aqua" type="submit">
-        Sign In
+      <button class="btn btn-gold"
+              type="submit">
+        Open Ball Admin
       </button>
 
     </form>
 
-    <p id="loginError" class="error"></p>
+    <p id="loginError"
+       class="message error"
+       role="alert"></p>
+
   </section>
 
-  <!-- EXISTING DASHBOARD -->
+  <!-- PRIVATE DASHBOARD -->
 
   <section id="adminContent" hidden>
 
-    <div class="dashboard-head">
+    <div class="top-row">
 
       <div>
         <div class="eyebrow">
-          ✦ EDEX WORD PORTAL
+          ✦ THE WORD PORTAL
         </div>
 
-        <h1>Event <em>Overview.</em></h1>
+        <h1>
+          Event <em>Overview.</em>
+        </h1>
 
         <p>
-          Ball Throwing game statistics,
-          records and word settings.
+          Ball Game rounds, chocolates,
+          inventory and word settings.
         </p>
       </div>
 
-      <button class="btn outline" id="signout">
+      <button id="signout"
+              type="button"
+              class="btn btn-outline">
         Sign Out
       </button>
 
     </div>
 
-    <!-- STATISTICS -->
+    <!-- SESSION STATISTICS -->
 
-    <div class="stats-grid">
+    <div class="stats">
 
-      <div class="stat panel">
-        <span>ROUNDS PLAYED</span>
+      <section class="panel stat">
+
+        <small>ROUNDS PLAYED</small>
         <strong id="played">0</strong>
-      </div>
 
-      <div class="stat panel">
-        <span>SUCCESSFUL</span>
+      </section>
+
+      <section class="panel stat">
+
+        <small>SUCCESSFUL</small>
         <strong id="wins">0</strong>
-      </div>
 
-      <div class="stat panel">
-        <span>NOT COMPLETED</span>
+      </section>
+
+      <section class="panel stat">
+
+        <small>NOT COMPLETED</small>
         <strong id="losses">0</strong>
-      </div>
 
-      <div class="stat panel accent">
-        <span>CHOCOLATES GIVEN 🍫</span>
+      </section>
+
+      <section class="panel stat chocolate">
+
+        <small>CHOCOLATES THIS SESSION 🍫</small>
         <strong id="chocolates">0</strong>
-      </div>
+
+      </section>
 
     </div>
 
-    <!-- SETTINGS -->
+    <div class="grid">
 
-    <div class="dashboard-grid">
+      <!-- CHOCOLATE INVENTORY -->
 
-      <section class="panel pad">
+      <section class="panel">
 
-        <div class="panel-title">
-          CHOCOLATE INVENTORY
+        <div class="eyebrow">
+          01 / CHOCOLATE INVENTORY
         </div>
 
-        <p>
-          Ball Game's existing inventory settings.
-        </p>
+        <h2>Chocolate Stock</h2>
 
         <div class="inventory">
 
           <div>
-            <small>TOTAL STOCK</small>
+
+            <small>TOTAL BALL STOCK</small>
             <strong id="stock">—</strong>
+
           </div>
 
           <div>
-            <small>REMAINING</small>
+
+            <small>PHYSICAL REMAINING</small>
             <strong id="remainingStock">—</strong>
+
           </div>
 
         </div>
 
-        <div class="setting">
+        <label for="stockInput">
+          Set Ball Game Total Stock
+        </label>
 
-          <input id="stockInput"
-                 type="number"
-                 min="0"
-                 step="1"
-                 placeholder="Total chocolates">
+        <input id="stockInput"
+               type="number"
+               min="0"
+               step="1"
+               placeholder="Example: 100">
 
-          <button class="btn gold" id="stockBtn">
-            Set Ball Game Stock
+        <div class="field-actions">
+
+          <button id="stockBtn"
+                  type="button"
+                  class="btn btn-gold private-action">
+            Save Stock
           </button>
 
         </div>
 
-        <p class="help">
-          This stock is not yet unified with
-          the Quiz and Timer Challenge stock.
+        <p class="muted">
+          Stock continues counting all chocolates
+          already distributed, including earlier
+          sessions.
+        </p>
+
+        <p class="muted">
+          This is still Ball Game stock, not yet
+          the shared inventory for all three games.
         </p>
 
       </section>
 
-      <section class="panel pad">
+      <!-- RANDOMIZER SETTINGS -->
 
-        <div class="panel-title">
-          WORD RANDOMIZER SETTINGS
+      <section class="panel">
+
+        <div class="eyebrow">
+          02 / RANDOMIZER
         </div>
 
-        <p>
-          Choose approved Arabic words or
-          all 125 three-letter combinations.
-        </p>
+        <h2>Arabic Word Settings</h2>
 
-        <label for="mode">
-          Randomizer mode
-        </label>
+        <label for="mode">Randomizer Mode</label>
 
         <select id="mode">
+
           <option value="words">
             Real-word list
           </option>
+
           <option value="all">
             All 125 combinations
           </option>
+
         </select>
 
         <label for="wordList">
-          Accepted Arabic words
+          Accepted Arabic Words
         </label>
 
         <textarea id="wordList"
-                  rows="4"
+                  rows="5"
                   dir="rtl"
                   spellcheck="false"></textarea>
 
-        <button class="btn lavender" id="saveBank">
-          Save Word Settings
-        </button>
+        <div class="field-actions">
 
-        <button class="btn outline" id="resetCycle">
-          ↺ Reset Used Words
-        </button>
+          <button id="saveBank"
+                  type="button"
+                  class="btn btn-outline private-action">
+            Save Word Settings
+          </button>
 
-        <p class="help" id="wordHelp">
-          Only ا ب ت ث ج are accepted.
-          Each word appears once per cycle.
+          <button id="resetCycle"
+                  type="button"
+                  class="btn btn-outline private-action">
+            ↺ Reset Used Words
+          </button>
+
+        </div>
+
+        <p class="muted">
+          Only words made from ا ب ت ث ج
+          with exactly three letters are allowed.
         </p>
 
       </section>
 
     </div>
 
-    <!-- ROUND HISTORY -->
+    <!-- HISTORY AND RESET -->
 
-    <section class="panel pad">
+    <section class="panel">
 
-      <div class="panel-title">
+      <div class="top-row">
 
-        <span>ROUND HISTORY</span>
+        <div>
+          <div class="eyebrow">
+            03 / BALL GAME RECORDS
+          </div>
 
-        <button class="btn outline" id="csv">
-          ↓ Export CSV
-        </button>
+          <h2>Played Round History</h2>
+        </div>
+
+        <div class="history-actions">
+
+          <button id="csv"
+                  type="button"
+                  class="btn btn-outline private-action">
+            ↓ Current Session CSV
+          </button>
+
+          <button id="csvAll"
+                  type="button"
+                  class="btn btn-outline private-action">
+            ↓ All History CSV
+          </button>
+
+          <!-- NEW RESET BUTTON -->
+
+          <button id="resetSession"
+                  type="button"
+                  class="btn btn-red private-action">
+            ↺ Reset Ball Game Session
+          </button>
+
+        </div>
 
       </div>
 
-      <div class="table-scroll">
+      <div class="table-wrap">
 
         <table>
 
@@ -338,40 +807,691 @@
           </thead>
 
           <tbody id="records">
+
             <tr>
               <td colspan="5">
-                No rounds recorded yet.
+                Loading results…
               </td>
             </tr>
+
           </tbody>
 
         </table>
 
       </div>
 
-      <p class="help">
-        Export CSV for saved game records.
+      <p class="reset-help">
+        Reset Ball Game Session starts the
+        displayed round counts and recent
+        session history from zero.
+        Earlier records remain saved in Firebase
+        and can still be exported.
+        Chocolate stock is not restored.
       </p>
+
+      <p id="actionMessage"
+         class="message"
+         role="status"
+         aria-live="polite"></p>
 
     </section>
 
   </section>
 
-</main>
+  <footer>
+    EDEX EXPERIENCE ✦ BALL GAME ADMIN
+  </footer>
 
-<div class="toast"
-     id="toast"
-     role="status"
-     aria-live="polite"></div>
+</div>
 
-<!-- EXISTING FIREBASE AND GAME SCRIPT -->
+<!-- FIREBASE -->
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
 
+<!-- YOUR EXISTING CONFIGURATION -->
+
 <script src="firebase-config.js"></script>
-<script src="app.js"></script>
+
+<!-- COMPLETE BALL ADMIN LOGIC -->
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  // Use the original Ball Game Firebase project.
+  // The existing firebase-config.js supplies
+  // auth, db and ADMIN_UID.
+
+  const statsRef =
+    db.collection("wordStats").doc("total");
+
+  const settingsRef =
+    db.collection("wordSettings").doc("main");
+
+  const liveRef =
+    db.collection("wordPortal").doc("live");
+
+  const historyRef =
+    db.collection("wordHistory");
+
+  const F =
+    firebase.firestore.FieldValue;
+
+  const defaultWords = [
+    "باب","بات","تاب","تاج","جاب",
+    "ثاب","جثا","ثبت","بثت","تبت",
+    "جبت","جثث","تجب","تبث","تثب"
+  ];
+
+  let authorized = false;
+  let busy = false;
+
+  let stats = {};
+  let settings = {};
+  let history = [];
+
+  let unsubscribe = [];
+
+  let loadedStats = false;
+  let loadedHistory = false;
+
+  // STOP EXISTING DATABASE WATCHERS
+
+  function stopWatching() {
+    unsubscribe.forEach(stop => stop());
+    unsubscribe = [];
+  }
+
+  // DISPLAY MESSAGES
+
+  function message(text, error = false) {
+    const box = $("actionMessage");
+    box.textContent = text;
+    box.classList.toggle("error", error);
+  }
+
+  // LOCK BUTTONS WHILE SAVING
+
+  async function perform(task) {
+    if (!authorized || busy) return;
+
+    busy = true;
+
+    document.querySelectorAll(
+      ".private-action"
+    ).forEach(button => {
+      button.disabled = true;
+    });
+
+    try {
+      await task();
+    } catch (err) {
+      console.error(err);
+
+      message(
+        err.message || "Unable to save changes.",
+        true
+      );
+    } finally {
+      busy = false;
+
+      document.querySelectorAll(
+        ".private-action"
+      ).forEach(button => {
+        button.disabled = false;
+      });
+    }
+  }
+
+  // CURRENT SESSION STATISTICS
+  // Lifetime counters are never deleted.
+
+  function sessionCount(name) {
+    const lifetime = Number(stats[name] || 0);
+
+    const baseline = Number(
+      stats[
+        "baseline" +
+        name.charAt(0).toUpperCase() +
+        name.slice(1)
+      ] || 0
+    );
+
+    return Math.max(0, lifetime - baseline);
+  }
+
+  // START DATE OF CURRENT SESSION
+
+  function resetTime() {
+    return stats.sessionResetAt?.toMillis?.()
+      || 0;
+  }
+
+  // CHECK WHETHER A ROUND BELONGS
+  // TO THE CURRENT SESSION
+
+  function isCurrent(record) {
+    const start = resetTime();
+
+    if (!start) return true;
+
+    const time = record.at?.toMillis?.();
+
+    return Number.isFinite(time) &&
+      time > start;
+  }
+
+  // FORMAT DATE
+
+  function dateText(timestamp) {
+    return timestamp?.toDate
+      ? timestamp.toDate().toLocaleString(
+          "en-US",
+          {
+            year:"numeric",
+            month:"short",
+            day:"numeric",
+            hour:"numeric",
+            minute:"2-digit",
+            hour12:true
+          }
+        )
+      : "Saving…";
+  }
+
+  // FORMAT SECONDS
+
+  function secondsText(value) {
+    const s = Math.max(0,Math.round(
+      Number(value) || 0
+    ));
+
+    return (
+      String(Math.floor(s / 60))
+        .padStart(2,"0") +
+      ":" +
+      String(s % 60).padStart(2,"0")
+    );
+  }
+
+  // RENDER DASHBOARD
+
+  function renderStats() {
+    if (!authorized) return;
+
+    ["played","wins","losses","chocolates"]
+      .forEach(name => {
+        $(name).textContent =
+          sessionCount(name).toLocaleString();
+      });
+
+    // IMPORTANT:
+    // The remaining physical stock is based
+    // on lifetime chocolate distribution,
+    // not the displayed session count.
+
+    const total = stats.stockTotal;
+
+    const hasStock =
+      Number.isSafeInteger(total) && total >= 0;
+
+    $("stock").textContent = hasStock
+      ? total.toLocaleString()
+      : "—";
+
+    $("remainingStock").textContent = hasStock
+      ? Math.max(
+          0,
+          total - Number(stats.chocolates || 0)
+        ).toLocaleString()
+      : "—";
+  }
+
+  // RENDER THE CURRENT SESSION ONLY
+
+  function renderHistory() {
+    const tbody = $("records");
+    tbody.replaceChildren();
+
+    const current = history.filter(isCurrent);
+
+    if (!current.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+
+      td.colSpan = 5;
+      td.textContent =
+        "No rounds in the current session.";
+
+      tr.append(td);
+      tbody.append(tr);
+      return;
+    }
+
+    current.forEach(record => {
+      const tr = document.createElement("tr");
+
+      const values = [
+        dateText(record.at),
+        record.word || "—",
+        record.outcome === "won"
+          ? "Completed"
+          : "Not Won",
+        String(record.chocolate || 0),
+        secondsText(record.elapsedSec)
+      ];
+
+      values.forEach((value,index) => {
+        const td = document.createElement("td");
+
+        td.textContent = value;
+
+        if (index === 1) {
+          td.style.fontFamily =
+            "Cairo,Arial,sans-serif";
+        }
+
+        tr.append(td);
+      });
+
+      tbody.append(tr);
+    });
+  }
+
+  // LOAD SAVED DATA IN REAL TIME
+
+  function watchDatabase() {
+    unsubscribe.push(
+
+      statsRef.onSnapshot(
+        snapshot => {
+          stats = snapshot.data() || {};
+          loadedStats = true;
+          renderStats();
+          renderHistory();
+        },
+        err => message(err.message,true)
+      )
+
+    );
+
+    unsubscribe.push(
+
+      settingsRef.onSnapshot(
+        snapshot => {
+          settings = snapshot.data() || {};
+
+          $("mode").value =
+            settings.mode === "all"
+              ? "all"
+              : "words";
+
+          $("wordList").value =
+            (
+              Array.isArray(settings.words)
+                ? settings.words
+                : defaultWords
+            ).join("، ");
+        },
+        err => message(err.message,true)
+      )
+
+    );
+
+    unsubscribe.push(
+
+      historyRef
+        .orderBy("at","desc")
+        .limit(200)
+        .onSnapshot(
+          snapshot => {
+            history = snapshot.docs.map(doc => ({
+              id:doc.id,
+              ...doc.data()
+            }));
+
+            loadedHistory = true;
+            renderHistory();
+          },
+          err => message(err.message,true)
+        )
+
+    );
+  }
+
+  // ORGANIZER LOGIN
+
+  $("loginForm").addEventListener(
+    "submit",
+    async event => {
+      event.preventDefault();
+
+      $("loginError").textContent = "";
+
+      try {
+        const credential =
+          await auth.signInWithEmailAndPassword(
+            $("email").value.trim(),
+            $("password").value
+          );
+
+        if (credential.user.uid !== ADMIN_UID) {
+          await auth.signOut();
+
+          throw Error(
+            "This account is not the Ball Game organizer."
+          );
+        }
+
+        $("password").value = "";
+
+      } catch (err) {
+        $("loginError").textContent =
+          err.message || "Login failed.";
+      }
+    }
+  );
+
+  // AUTHENTICATION STATE
+
+  auth.onAuthStateChanged(async user => {
+    stopWatching();
+
+    authorized = Boolean(
+      user && user.uid === ADMIN_UID
+    );
+
+    if (user && !authorized) {
+      await auth.signOut();
+      return;
+    }
+
+    $("adminLogin").hidden = authorized;
+    $("adminContent").hidden = !authorized;
+
+    if (authorized) {
+      loadedStats = false;
+      loadedHistory = false;
+      watchDatabase();
+    }
+  });
+
+  // SIGN OUT
+
+  $("signout").onclick = () => {
+    if (!busy) auth.signOut();
+  };
+
+  // SAVE STOCK
+
+  async function saveStock() {
+    const raw = $("stockInput").value.trim();
+    const value = Number(raw);
+
+    if (
+      !raw ||
+      !Number.isSafeInteger(value) ||
+      value < 0
+    ) {
+      throw Error(
+        "Enter a valid whole number for stock."
+      );
+    }
+
+    await db.runTransaction(async tx => {
+      const snapshot = await tx.get(statsRef);
+      const current = snapshot.data() || {};
+
+      if (
+        value < Number(current.chocolates || 0)
+      ) {
+        throw Error(
+          "Total stock cannot be less than chocolates already distributed."
+        );
+      }
+
+      tx.set(statsRef, {
+        stockTotal:value
+      },{merge:true});
+    });
+
+    $("stockInput").value = "";
+    message("✅ Ball Game stock saved.");
+  }
+
+  $("stockBtn").onclick = () =>
+    perform(saveStock);
+
+  // SAVE WORD SETTINGS
+
+  async function saveWords() {
+    const words = [
+      ...new Set(
+        $("wordList").value
+          .split(/[\s,،؛;]+/u)
+          .map(word => word.trim())
+          .filter(Boolean)
+      )
+    ];
+
+    if (
+      !words.length ||
+      words.some(word =>
+        !/^[ابتثج]{3}$/u.test(word)
+      )
+    ) {
+      throw Error(
+        "Use only three-letter words made from ا ب ت ث ج."
+      );
+    }
+
+    await settingsRef.set({
+      mode:$("mode").value,
+      words:words
+    },{merge:true});
+
+    message("✅ Word settings saved.");
+  }
+
+  $("saveBank").onclick = () =>
+    perform(saveWords);
+
+  // RESET USED WORDS ONLY
+
+  async function resetUsedWords() {
+    if (!confirm(
+      "Reset the used-word cycle?"
+    )) return;
+
+    await db.runTransaction(async tx => {
+      const snapshot = await tx.get(liveRef);
+
+      const stage =
+        snapshot.data()?.stage || "idle";
+
+      if (stage !== "idle") {
+        throw Error(
+          "Finish the active round first."
+        );
+      }
+
+      tx.set(liveRef,{
+        usedWords:[]
+      },{merge:true});
+    });
+
+    message("✅ Used-word cycle reset.");
+  }
+
+  $("resetCycle").onclick = () =>
+    perform(resetUsedWords);
+
+  // NEW: RESET BALL GAME SESSION
+  //
+  // This does not delete wordHistory.
+  // It does not erase chocolates already
+  // given out.
+  // It stores baseline values instead.
+
+  async function resetBallSession() {
+    if (!loadedStats || !loadedHistory) {
+      throw Error(
+        "Wait for all Ball Game records to load."
+      );
+    }
+
+    const firstConfirm = confirm(
+      "Reset Ball Game played counts and start a new session?\n\n" +
+      "Old records will stay saved.\n" +
+      "Chocolate inventory will NOT be restored.\n" +
+      "Quiz and Timer will NOT be affected."
+    );
+
+    if (!firstConfirm) return;
+
+    await db.runTransaction(async tx => {
+      const liveSnapshot =
+        await tx.get(liveRef);
+
+      const statsSnapshot =
+        await tx.get(statsRef);
+
+      const stage =
+        liveSnapshot.data()?.stage || "idle";
+
+      if (stage !== "idle") {
+        throw Error(
+          "Finish or cancel the active Ball Game round before resetting."
+        );
+      }
+
+      const current =
+        statsSnapshot.data() || {};
+
+      // Preserve the lifetime counters.
+      // Store the starting values for
+      // the new session.
+
+      tx.set(statsRef,{
+        baselinePlayed:
+          Number(current.played || 0),
+
+        baselineWins:
+          Number(current.wins || 0),
+
+        baselineLosses:
+          Number(current.losses || 0),
+
+        baselineChocolates:
+          Number(current.chocolates || 0),
+
+        sessionResetAt:
+          F.serverTimestamp()
+
+      },{merge:true});
+    });
+
+    message(
+      "✅ Ball Game session reset! " +
+      "Displayed rounds are zero. " +
+      "Existing history and physical stock are preserved."
+    );
+  }
+
+  $("resetSession").onclick = () =>
+    perform(resetBallSession);
+
+  // CSV CELL FORMATTING
+
+  function csvCell(value) {
+    let text = String(value ?? "");
+
+    if (/^\s*[=+@\-]/.test(text)) {
+      text = "'" + text;
+    }
+
+    return '"' +
+      text.replaceAll('"','""') +
+      '"';
+  }
+
+  // DOWNLOAD CSV
+
+  async function exportCSV(allHistory) {
+    const snapshot = await historyRef
+      .orderBy("at","desc")
+      .get();
+
+    const records = snapshot.docs
+      .map(doc => doc.data())
+      .filter(record =>
+        allHistory || isCurrent(record)
+      );
+
+    const rows = [[
+      "Date",
+      "Word",
+      "Result",
+      "Chocolates",
+      "Time Used Seconds"
+    ]];
+
+    records.forEach(record => {
+      rows.push([
+        record.at?.toDate?.().toISOString()
+          || "",
+        record.word || "",
+        record.outcome || "",
+        record.chocolate || 0,
+        record.elapsedSec || 0
+      ]);
+    });
+
+    const csv = "\uFEFF" +
+      rows.map(row =>
+        row.map(csvCell).join(",")
+      ).join("\r\n");
+
+    const blob = new Blob(
+      [csv],
+      {type:"text/csv;charset=utf-8"}
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+
+    link.download = allHistory
+      ? "edex-ball-all-history.csv"
+      : "edex-ball-current-session.csv";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(
+      () => URL.revokeObjectURL(url),
+      1000
+    );
+
+    message(
+      "✅ CSV exported successfully."
+    );
+  }
+
+  $("csv").onclick = () =>
+    perform(() => exportCSV(false));
+
+  $("csvAll").onclick = () =>
+    perform(() => exportCSV(true));
+
+})();
+</script>
 
 </body>
 </html>
