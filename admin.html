@@ -3,178 +3,152 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b21">
 <title>EDEX | Ball Game Admin</title>
 
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
 <style>
-.edex-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
+.edex-nav {
+  max-width:1300px;
+  margin:12px auto;
+  padding:10px 20px;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px
 }
-
-.edex-links a {
-  padding: 11px 15px;
-  border: 1px solid #7b649c;
-  border-radius: 11px;
-  color: #f6eaff;
-  background: #372a52;
-  font-size: 12px;
-  font-weight: 800;
-  text-decoration: none;
+.edex-nav a {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  padding:12px 16px;
+  min-height:46px;
+  border-radius:12px;
+  border:1px solid #80649f;
+  background:#403050;
+  color:#f9eeff;
+  font:800 13px Outfit,Arial,sans-serif;
+  text-decoration:none;
+  text-align:center
 }
-
-.edex-links a:hover {
-  background: #594276;
+.edex-nav a:hover{background:#644780}
+.edex-nav a.primary {
+  background:#f7d895;
+  color:#302115;
+  border-color:#f7d895
 }
-
-.edex-links a.gold-link {
-  color: #23172e;
-  background: #f5d594;
-  border-color: #f5d594;
-}
-
-.edex-note {
-  font-size: 12px;
-  color: #bcb5d0;
-  line-height: 1.6;
-}
-
-@media (max-width: 700px) {
-  .edex-links {
-    width: 100%;
-  }
+@media(max-width:650px) {
+  .edex-nav a {flex:1}
 }
 </style>
 </head>
 
 <body>
-
 <div class="aurora"></div>
 <div class="dust"></div>
 
 <header class="topbar">
-
   <a class="brand" href="admin.html">
     <span class="gem">✦</span>
     <span>
       EDEX
-      <small>BALL GAME CONTROL CENTER</small>
+      <small>BALL GAME ADMIN</small>
     </span>
   </a>
-
-  <nav class="edex-links">
-
-    <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
-      ← Main EDEX Admin
-    </a>
-
-    <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
-      ⏱ Timer Admin
-    </a>
-
-    <a
-      class="gold-link"
-      href="index.html"
-      target="_blank"
-      rel="noopener">
-      ↗ Open Ball Visitor / Organizer
-    </a>
-
-  </nav>
-
 </header>
+
+<nav class="edex-nav">
+  <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
+    ← Back to Main Admin
+  </a>
+
+  <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
+    ⏱ Timer Admin
+  </a>
+
+  <a href="index.html"
+     target="_blank"
+     rel="noopener noreferrer"
+     class="primary">
+    ↗ Open Ball Visitor / Organizer
+  </a>
+</nav>
 
 <main class="dashboard">
 
-  <!-- ORGANIZER LOGIN -->
+  <!-- LOGIN -->
 
   <section class="panel auth-box" id="adminLogin">
+    <div class="eyebrow">✦ PRIVATE ACCESS</div>
 
-    <div class="eyebrow">
-      ✦ PRIVATE ORGANIZER ACCESS
-    </div>
-
-    <h1>
-      Control <em>Center.</em>
-    </h1>
+    <h1>Control <em>Center.</em></h1>
 
     <p>
-      Sign in to manage the Ball Throwing game.
+      Sign in to view your Ball Game rounds,
+      chocolates and word settings.
     </p>
 
     <form id="loginForm">
+      <input id="email"
+             type="email"
+             placeholder="Organizer email"
+             autocomplete="username"
+             required>
 
-      <input
-        id="email"
-        type="email"
-        autocomplete="username"
-        placeholder="Organizer email"
-        required>
-
-      <input
-        id="password"
-        type="password"
-        autocomplete="current-password"
-        placeholder="Password"
-        required>
+      <input id="password"
+             type="password"
+             placeholder="Password"
+             autocomplete="current-password"
+             required>
 
       <button class="btn aqua" type="submit">
         Sign In
       </button>
-
     </form>
 
-    <p class="error" id="loginError"></p>
-
+    <p id="loginError" class="error"></p>
   </section>
 
-  <!-- ADMIN DASHBOARD -->
+  <!-- DASHBOARD -->
 
   <section id="adminContent" hidden>
-
     <div class="dashboard-head">
-
       <div>
         <div class="eyebrow">
-          ✦ EDEX BALL THROWING
+          ✦ THE WORD PORTAL
         </div>
 
-        <h1>
-          Event <em>Overview.</em>
-        </h1>
+        <h1>Event <em>Overview.</em></h1>
 
         <p>
-          View rounds, chocolates and word settings.
+          Your Ball Game results are stored
+          separately from the Quiz and Timer results.
         </p>
-
       </div>
 
       <button class="btn outline" id="signout">
         Sign Out
       </button>
-
     </div>
 
-    <!-- STATISTICS -->
+    <!-- COUNTERS -->
 
     <div class="stats-grid">
-
       <div class="stat panel">
         <span>ROUNDS PLAYED</span>
         <strong id="played">0</strong>
       </div>
 
       <div class="stat panel">
-        <span>WON</span>
+        <span>SUCCESSFUL</span>
         <strong id="wins">0</strong>
       </div>
 
       <div class="stat panel">
-        <span>FAILED</span>
+        <span>NOT COMPLETED</span>
         <strong id="losses">0</strong>
       </div>
 
@@ -182,27 +156,24 @@
         <span>CHOCOLATES GIVEN 🍫</span>
         <strong id="chocolates">0</strong>
       </div>
-
     </div>
 
     <div class="dashboard-grid">
 
-      <!-- EXISTING BALL GAME STOCK -->
+      <!-- EXISTING STOCK CONTROL -->
 
       <section class="panel pad">
-
         <div class="panel-title">
           CHOCOLATE INVENTORY
         </div>
 
-        <p class="edex-note">
-          This is your existing Ball Game stock
-          setting. It is not yet connected to
-          shared stock across all three games.
+        <p>
+          Existing Ball Game stock control.
+          This has not yet been connected
+          to one shared stock across three games.
         </p>
 
         <div class="inventory">
-
           <div>
             <small>TOTAL STOCK</small>
             <strong id="stock">—</strong>
@@ -212,40 +183,35 @@
             <small>REMAINING</small>
             <strong id="remainingStock">—</strong>
           </div>
-
         </div>
 
         <div class="setting">
-
-          <input
-            id="stockInput"
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Total chocolates">
+          <input id="stockInput"
+                 type="number"
+                 min="0"
+                 step="1"
+                 placeholder="Total chocolates">
 
           <button class="btn gold" id="stockBtn">
-            Save Ball Stock
+            Set Ball Game Stock
           </button>
-
         </div>
 
-        <p class="edex-note">
-          One winning round records one chocolate.
+        <p class="help">
+          One successful round records one chocolate.
         </p>
-
       </section>
 
       <!-- WORD SETTINGS -->
 
       <section class="panel pad">
-
         <div class="panel-title">
           WORD RANDOMIZER SETTINGS
         </div>
 
         <p>
-          Configure the Arabic word selection.
+          Choose real Arabic words or all
+          125 three-letter combinations.
         </p>
 
         <label for="mode">
@@ -253,7 +219,6 @@
         </label>
 
         <select id="mode">
-
           <option value="words">
             Real-word list
           </option>
@@ -261,19 +226,16 @@
           <option value="all">
             All 125 combinations
           </option>
-
         </select>
 
         <label for="wordList">
-          Accepted Arabic words
+          Accepted words
         </label>
 
-        <textarea
-          id="wordList"
-          dir="rtl"
-          rows="4"
-          spellcheck="false">
-        </textarea>
+        <textarea id="wordList"
+                  dir="rtl"
+                  rows="4"
+                  spellcheck="false"></textarea>
 
         <button class="btn lavender" id="saveBank">
           Save Word Settings
@@ -283,19 +245,17 @@
           ↺ Reset Used Words
         </button>
 
-        <p class="edex-note">
-          Reset Used Words does not erase the
-          chocolate totals or round history.
+        <p class="help" id="wordHelp">
+          Only ا ب ت ث ج are accepted.
+          Each word appears once per cycle.
         </p>
-
       </section>
 
     </div>
 
-    <!-- RECENT GAME HISTORY -->
+    <!-- HISTORY -->
 
     <section class="panel pad">
-
       <div class="panel-title">
         <span>ROUND HISTORY</span>
 
@@ -305,9 +265,7 @@
       </div>
 
       <div class="table-scroll">
-
         <table>
-
           <thead>
             <tr>
               <th>DATE & TIME</th>
@@ -321,41 +279,31 @@
           <tbody id="records">
             <tr>
               <td colspan="5">
-                Loading records…
+                No rounds recorded yet.
               </td>
             </tr>
           </tbody>
-
         </table>
-
       </div>
 
-      <p class="edex-note">
+      <p class="help">
         Shows the latest 200 rounds.
-        CSV export uses the existing game history.
+        Export CSV for game records.
       </p>
-
     </section>
 
   </section>
-
 </main>
 
-<div
-  class="toast"
-  id="toast"
-  role="status"
-  aria-live="polite">
-</div>
-
-<!-- EXISTING FIREBASE -->
+<div class="toast"
+     id="toast"
+     role="status"
+     aria-live="polite"></div>
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
-
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
-
 </body>
 </html>
