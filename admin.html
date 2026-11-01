@@ -11,37 +11,67 @@
 <link rel="stylesheet" href="style.css">
 
 <style>
-.edex-nav {
-  max-width:1300px;
-  margin:12px auto;
-  padding:10px 20px;
+.edex-tabs{
+  width:min(1200px,calc(100% - 40px));
+  margin:12px auto 15px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  position:relative;
+  z-index:10;
+}
+.edex-tabs a{
   display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px
-}
-.edex-nav a {
-  display:inline-flex;
-  justify-content:center;
   align-items:center;
-  padding:12px 16px;
-  min-height:46px;
-  border-radius:12px;
-  border:1px solid #80649f;
-  background:#403050;
-  color:#f9eeff;
-  font:800 13px Outfit,Arial,sans-serif;
+  justify-content:center;
+  min-height:52px;
+  padding:12px;
+  text-align:center;
+  background:#49345f;
+  color:#f7ecff;
+  border:1px solid #81659d;
+  border-radius:13px;
   text-decoration:none;
-  text-align:center
+  font:900 14px Outfit,Arial,sans-serif;
 }
-.edex-nav a:hover{background:#644780}
-.edex-nav a.primary {
-  background:#f7d895;
-  color:#302115;
-  border-color:#f7d895
+.edex-tabs a:hover{background:#675080}
+.edex-tabs a.active{
+  background:linear-gradient(110deg,#ffe2a1,#f4ca74);
+  color:#291b0c;
+  border-color:#ffe5a9;
+  box-shadow:0 4px 20px #ffd77f30;
 }
-@media(max-width:650px) {
-  .edex-nav a {flex:1}
+.visitor-action{
+  max-width:1200px;
+  margin:0 auto 25px;
+  padding:0 20px;
+  text-align:center;
+  position:relative;
+  z-index:10;
+}
+.visitor-action a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:min(100%,470px);
+  min-height:54px;
+  padding:14px 20px;
+  background:linear-gradient(110deg,#f7d995,#e9b961);
+  border:1px solid #ffe3a5;
+  border-radius:14px;
+  color:#251808;
+  font:900 15px Outfit,Arial,sans-serif;
+  text-decoration:none;
+  box-shadow:0 9px 25px #d19a4230;
+}
+.visitor-action a:hover{filter:brightness(1.08)}
+@media(max-width:650px){
+  .edex-tabs{gap:6px}
+  .edex-tabs a{
+    font-size:11px;
+    padding:10px 4px;
+    min-height:48px;
+  }
 }
 </style>
 </head>
@@ -55,43 +85,59 @@
     <span class="gem">✦</span>
     <span>
       EDEX
-      <small>BALL GAME ADMIN</small>
+      <small>BALL GAME CONTROL CENTER</small>
     </span>
   </a>
 </header>
 
-<nav class="edex-nav">
+<!-- ALL THREE ADMIN TABS -->
+
+<nav class="edex-tabs" aria-label="EDEX Admin pages">
+
   <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
-    ← Back to Main Admin
+    ✦ Quiz Admin
+  </a>
+
+  <a class="active" aria-current="page"
+     href="https://freshlook10-alt.github.io/Edex-Word-Portal/admin.html">
+    ◈ Ball Game Admin
   </a>
 
   <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
     ⏱ Timer Admin
   </a>
 
-  <a href="index.html"
-     target="_blank"
-     rel="noopener noreferrer"
-     class="primary">
-    ↗ Open Ball Visitor / Organizer
-  </a>
 </nav>
+
+<!-- VISIBLE VISITOR BUTTON INSIDE BALL ADMIN -->
+
+<div class="visitor-action">
+  <a href="https://freshlook10-alt.github.io/Edex-Word-Portal/"
+     target="_blank"
+     rel="noopener noreferrer">
+    ↗ OPEN BALL VISITOR / ORGANIZER
+  </a>
+</div>
 
 <main class="dashboard">
 
-  <!-- LOGIN -->
+  <!-- ORGANIZER LOGIN -->
 
   <section class="panel auth-box" id="adminLogin">
-    <div class="eyebrow">✦ PRIVATE ACCESS</div>
+
+    <div class="eyebrow">
+      ✦ PRIVATE ORGANIZER ACCESS
+    </div>
 
     <h1>Control <em>Center.</em></h1>
 
     <p>
-      Sign in to view your Ball Game rounds,
-      chocolates and word settings.
+      Sign in to view Ball Throwing results
+      and organizer settings.
     </p>
 
     <form id="loginForm">
+
       <input id="email"
              type="email"
              placeholder="Organizer email"
@@ -107,36 +153,41 @@
       <button class="btn aqua" type="submit">
         Sign In
       </button>
+
     </form>
 
     <p id="loginError" class="error"></p>
   </section>
 
-  <!-- DASHBOARD -->
+  <!-- EXISTING DASHBOARD -->
 
   <section id="adminContent" hidden>
+
     <div class="dashboard-head">
+
       <div>
         <div class="eyebrow">
-          ✦ THE WORD PORTAL
+          ✦ EDEX WORD PORTAL
         </div>
 
         <h1>Event <em>Overview.</em></h1>
 
         <p>
-          Your Ball Game results are stored
-          separately from the Quiz and Timer results.
+          Ball Throwing game statistics,
+          records and word settings.
         </p>
       </div>
 
       <button class="btn outline" id="signout">
         Sign Out
       </button>
+
     </div>
 
-    <!-- COUNTERS -->
+    <!-- STATISTICS -->
 
     <div class="stats-grid">
+
       <div class="stat panel">
         <span>ROUNDS PLAYED</span>
         <strong id="played">0</strong>
@@ -156,24 +207,25 @@
         <span>CHOCOLATES GIVEN 🍫</span>
         <strong id="chocolates">0</strong>
       </div>
+
     </div>
+
+    <!-- SETTINGS -->
 
     <div class="dashboard-grid">
 
-      <!-- EXISTING STOCK CONTROL -->
-
       <section class="panel pad">
+
         <div class="panel-title">
           CHOCOLATE INVENTORY
         </div>
 
         <p>
-          Existing Ball Game stock control.
-          This has not yet been connected
-          to one shared stock across three games.
+          Ball Game's existing inventory settings.
         </p>
 
         <div class="inventory">
+
           <div>
             <small>TOTAL STOCK</small>
             <strong id="stock">—</strong>
@@ -183,9 +235,11 @@
             <small>REMAINING</small>
             <strong id="remainingStock">—</strong>
           </div>
+
         </div>
 
         <div class="setting">
+
           <input id="stockInput"
                  type="number"
                  min="0"
@@ -195,23 +249,25 @@
           <button class="btn gold" id="stockBtn">
             Set Ball Game Stock
           </button>
+
         </div>
 
         <p class="help">
-          One successful round records one chocolate.
+          This stock is not yet unified with
+          the Quiz and Timer Challenge stock.
         </p>
+
       </section>
 
-      <!-- WORD SETTINGS -->
-
       <section class="panel pad">
+
         <div class="panel-title">
           WORD RANDOMIZER SETTINGS
         </div>
 
         <p>
-          Choose real Arabic words or all
-          125 three-letter combinations.
+          Choose approved Arabic words or
+          all 125 three-letter combinations.
         </p>
 
         <label for="mode">
@@ -222,19 +278,18 @@
           <option value="words">
             Real-word list
           </option>
-
           <option value="all">
             All 125 combinations
           </option>
         </select>
 
         <label for="wordList">
-          Accepted words
+          Accepted Arabic words
         </label>
 
         <textarea id="wordList"
-                  dir="rtl"
                   rows="4"
+                  dir="rtl"
                   spellcheck="false"></textarea>
 
         <button class="btn lavender" id="saveBank">
@@ -249,23 +304,29 @@
           Only ا ب ت ث ج are accepted.
           Each word appears once per cycle.
         </p>
+
       </section>
 
     </div>
 
-    <!-- HISTORY -->
+    <!-- ROUND HISTORY -->
 
     <section class="panel pad">
+
       <div class="panel-title">
+
         <span>ROUND HISTORY</span>
 
         <button class="btn outline" id="csv">
           ↓ Export CSV
         </button>
+
       </div>
 
       <div class="table-scroll">
+
         <table>
+
           <thead>
             <tr>
               <th>DATE & TIME</th>
@@ -283,16 +344,19 @@
               </td>
             </tr>
           </tbody>
+
         </table>
+
       </div>
 
       <p class="help">
-        Shows the latest 200 rounds.
-        Export CSV for game records.
+        Export CSV for saved game records.
       </p>
+
     </section>
 
   </section>
+
 </main>
 
 <div class="toast"
@@ -300,10 +364,14 @@
      role="status"
      aria-live="polite"></div>
 
+<!-- EXISTING FIREBASE AND GAME SCRIPT -->
+
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
+
 </body>
 </html>
