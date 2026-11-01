@@ -1,24 +1,49 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b21">
-
 <title>EDEX | The Word Portal</title>
 
-<link rel="preconnect"
-href="https://fonts.googleapis.com">
-
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Outfit:wght@400;500;600;700;800;900&display=swap"
-rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
+<style>
+.edex-navigation {
+  max-width:1100px;
+  margin:0 auto;
+  padding:12px 22px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+  position:relative;
+  z-index:5
+}
+.edex-navigation a {
+  padding:11px 16px;
+  border:1px solid #886da6;
+  border-radius:12px;
+  background:#45355d;
+  color:#f8efff;
+  font:800 12px Outfit,Arial,sans-serif;
+  text-decoration:none;
+  text-align:center
+}
+.edex-navigation a:hover {
+  background:#675080
+}
+.edex-navigation a.primary {
+  color:#302115;
+  background:#f7d895;
+  border-color:#f7d895
+}
+@media(max-width:600px) {
+  .edex-navigation a {flex:1}
+}
+</style>
 </head>
 
 <body>
@@ -27,36 +52,34 @@ rel="stylesheet">
 <div class="dust"></div>
 
 <header class="topbar">
-
   <a class="brand" href="index.html">
-
     <span class="gem">✦</span>
-
     <span>
       EDEX
       <small>THE WORD PORTAL</small>
     </span>
-
   </a>
 
   <div class="toplinks">
-
     <span class="live-dot" id="connection">
       ● CONNECTING
     </span>
-
-    <a href="admin.html">
-      Admin ↗
-    </a>
-
   </div>
-
 </header>
+
+<nav class="edex-navigation">
+  <a href="admin.html" class="primary">
+    ← Back to Ball Admin
+  </a>
+
+  <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
+    ← Main EDEX Admin
+  </a>
+</nav>
 
 <main class="screen">
 
   <section class="hero">
-
     <div class="orbit orbit-one"></div>
     <div class="orbit orbit-two"></div>
 
@@ -72,259 +95,166 @@ rel="stylesheet">
       A new challenge awaits.
     </p>
 
-    <!-- FIVE ARABIC LETTERS -->
-
     <div class="five" dir="rtl">
-
       <span>ا</span>
       <span>ب</span>
       <span>ت</span>
       <span>ث</span>
       <span>ج</span>
-
     </div>
 
-    <!-- RANDOMIZED WORD DISPLAY -->
+    <!-- WORD DISPLAY -->
 
     <div class="word-box" id="wordBox">
-
       <div class="word" id="word" dir="rtl">
         ✦
       </div>
-
       <div class="shine"></div>
-
     </div>
 
-    <!-- COUNTDOWN TIMER -->
+    <!-- TIMER -->
 
     <div class="count-label">
       THE COUNTDOWN
     </div>
 
     <div class="timer" id="timer">
-
       <svg viewBox="0 0 200 200"
-      aria-hidden="true">
-
+           aria-hidden="true">
         <circle
           class="track"
           cx="100"
           cy="100"
-          r="88"
-        />
+          r="88"></circle>
 
         <circle
           class="ring"
           id="ring"
           cx="100"
           cy="100"
-          r="88"
-        />
-
+          r="88"></circle>
       </svg>
 
       <div class="timer-face">
-
-        <strong id="time">
-          02:00
-        </strong>
-
-        <span id="phase">
-          STANDBY
-        </span>
-
+        <strong id="time">02:00</strong>
+        <span id="phase">STANDBY</span>
       </div>
-
     </div>
 
     <p class="hero-foot" id="message">
       THE NEXT WORD IS WAITING
     </p>
-
   </section>
 
   <!-- ORGANIZER CONTROLS -->
-  <!-- THE VISITOR AND ORGANIZER SHARE THIS SCREEN -->
 
   <section class="operator panel"
-  id="operator" hidden>
+           id="operator"
+           hidden>
 
     <div class="panel-title">
-
-      <span>
-        ✦ ORGANIZER CONTROLS
-      </span>
-
-      <span id="controlStatus">
-        READY
-      </span>
-
+      <span>✦ ORGANIZER CONTROLS</span>
+      <span id="controlStatus">READY</span>
     </div>
 
     <div class="controls">
-
-      <button
-        class="btn lavender"
-        id="randomBtn">
-
+      <button class="btn lavender"
+              id="randomBtn">
         ✧ Randomize Word
-
       </button>
 
-      <button
-        class="btn aqua"
-        id="startBtn">
-
+      <button class="btn aqua"
+              id="startBtn">
         ▶ Start Timer
-
       </button>
 
-      <button
-        class="btn gold"
-        id="winBtn">
-
+      <button class="btn gold"
+              id="winBtn">
         ✓ Completed + Chocolate Given 🍫
-
       </button>
 
-      <button
-        class="btn dark"
-        id="loseBtn">
-
+      <button class="btn dark"
+              id="loseBtn">
         ✕ Not Won — No Chocolate
-
       </button>
-
     </div>
 
-    <!-- TIMER SETTINGS -->
-
     <div class="duration-control">
-
       <label for="minutes">
         TIME FOR EVERY ROUND (MINUTES)
       </label>
 
-      <input
-        type="number"
-        id="minutes"
-        min="0.25"
-        max="15"
-        step="0.25"
-        value="2"
-      >
+      <input type="number"
+             id="minutes"
+             min="0.25"
+             max="15"
+             step="0.25"
+             value="2">
 
-      <button
-        class="btn outline"
-        id="saveTime">
-
+      <button class="btn outline"
+              id="saveTime">
         Save Time
-
       </button>
 
       <span id="timeSaved">
         Changes apply to future rounds
       </span>
-
     </div>
 
     <div class="operator-foot">
+      <span id="usedCount">0 words used</span>
 
-      <span id="usedCount">
-        0 words used
-      </span>
-
-      <button
-        class="text-btn"
-        id="signout">
-
+      <button class="text-btn"
+              id="signout">
         Organizer Sign Out
-
       </button>
-
     </div>
-
   </section>
 
   <!-- ORGANIZER LOGIN -->
 
-  <details id="access"
-  class="access panel">
-
-    <summary>
-      ✦ Organizer access
-    </summary>
+  <details id="access" class="access panel">
+    <summary>✦ Organizer access</summary>
 
     <form id="loginForm">
+      <input type="email"
+             id="email"
+             placeholder="Organizer email"
+             autocomplete="username"
+             required>
 
-      <input
-        type="email"
-        id="email"
-        placeholder="Organizer email"
-        autocomplete="username"
-        required
-      >
+      <input type="password"
+             id="password"
+             placeholder="Password"
+             autocomplete="current-password"
+             required>
 
-      <input
-        type="password"
-        id="password"
-        placeholder="Password"
-        autocomplete="current-password"
-        required
-      >
-
-      <button
-        class="btn aqua"
-        type="submit">
-
+      <button class="btn aqua"
+              type="submit">
         Unlock Controls
-
       </button>
-
     </form>
 
     <p id="loginError" class="error"></p>
-
   </details>
 
-  <!-- FOOTER -->
-
   <footer>
-
     EDEX EXPERIENCE
-
     <span>✧</span>
-
     A LITTLE MAGIC IN EVERY LETTER
-
   </footer>
 
 </main>
 
-<!-- NOTIFICATION -->
-
-<div
-  class="toast"
-  id="toast"
-  role="status"
-  aria-live="polite">
-</div>
-
-<!-- FIREBASE -->
+<div class="toast"
+     id="toast"
+     role="status"
+     aria-live="polite"></div>
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
-
-<!-- YOUR FIREBASE CONFIG -->
-
 <script src="firebase-config.js"></script>
-
-<!-- GAME LOGIC -->
-
 <script src="app.js"></script>
 
 </body>
