@@ -4,17 +4,9 @@
 
  FULL APP.JS REPLACEMENT
 
- Fixes the timer input problem.
- Accepts 00:20 or 20 for twenty seconds.
-
- Keeps:
- - Existing Firebase project
- - Chocolate stock
- - WON and FAILED
- - All previous records
- - Reset Session
- - CSV exports
- - Visitor/Organizer screen
+ Timer accepts 00:20 or 20.
+ Keeps Firebase data, chocolates,
+ history, CSV and Reset Session.
 */
 
 (() => {
@@ -23,6 +15,8 @@
   const $ = id => document.getElementById(id);
 
   const isAdmin = Boolean($("adminContent"));
+
+  const FV = firebase.firestore.FieldValue;
 
   const liveRef =
     db.collection("wordPortal").doc("live");
@@ -36,12 +30,19 @@
   const historyRef =
     db.collection("wordHistory");
 
-  const FV = firebase.firestore.FieldValue;
+  let authorized = false;
+  let busy = false;
+
+  let durationDirty = false;
+  let settingsKnown = false;
+
+  let statsReady = false;
+  let historyReady = false;
 
   let live = {
     stage: "idle",
-    roundId: 0,
-    durationSec: 120
+    durationSec: 120,
+    roundId: 0
   };
 
   let settings = {
@@ -50,18 +51,11 @@
 
   let stats = {};
   let history = [];
-
-  let authorized = false;
-  let busy = false;
-  let hasStats = false;
-  let hasHistory = false;
-  let privateListeners = [];
-  let messageTimer = null;
-  let durationEdited = false;
+  let unsubs = [];
 
   // FORMAT SECONDS AS MM:SS
 
-  function formatTime(value) {
+  function clockText(value) {
     const n = Math.max(
       0,
       Math.ceil(Number(value) || 0)
@@ -74,67 +68,88 @@
     );
   }
 
-  // ACCEPT 00:20 OR PLAIN 20
+  // ACCEPT 00:20 OR JUST 20
 
-  function parseTime(value) {
-    const text = String(value).trim();
+  function parseTime(raw) {
+    const text = String(raw).trim();
 
-    let n;
+    let value;
 
     if (/^\d{1,2}:[0-5]\d$/.test(text)) {
-      const parts = text.split(":").map(Number);
-      n = parts[0] * 60 + parts[1];
+
+      const [m, s] =
+        text.split(":").map(Number);
+
+      value = m * 60 + s;
 
     } else if (/^\d{1,3}$/.test(text)) {
-      n = Number(text);
+
+      value = Number(text);
 
     } else {
+
       throw Error(
-        "Enter 00:20 or 20 for twenty seconds."
+        "Use 00:20 or 20 for twenty seconds."
       );
     }
 
     if (
-      !Number.isSafeInteger(n) ||
-      n < 10 ||
-      n > 900
+      !Number.isSafeInteger(value) ||
+      value < 10 ||
+      value > 900
     ) {
       throw Error(
-        "Choose a time from 00:10 to 15:00."
+        "Set a duration from 00:10 to 15:00."
       );
     }
 
-    return n;
+    return value;
   }
 
-  // GET CURRENT DURATION
+  // CONFIGURED DURATION
 
-  function duration() {
-    const n = live.stage === "running"
-      ? Number(live.durationSec)
-      : Number(
-          settings.durationSec ||
-          live.durationSec
-        );
+  function configuredSeconds() {
+
+    const n = Number(
+      settingsKnown
+        ? settings.durationSec
+        : live.durationSec
+    );
 
     return Number.isFinite(n) && n >= 10
       ? n
       : 120;
   }
 
-  // CALCULATE TIME REMAINING
+  // CURRENT ROUND DURATION
 
-  function remaining() {
+  function roundSeconds() {
+
+    const n = Number(
+      live.stage === "running"
+        ? live.durationSec
+        : configuredSeconds()
+    );
+
+    return Number.isFinite(n) && n >= 10
+      ? n
+      : 120;
+  }
+
+  // LIVE REMAINING TIME
+
+  function timeLeft() {
+
     if (
       live.stage !== "running" ||
       !live.startedAt?.toMillis
     ) {
-      return duration();
+      return roundSeconds();
     }
 
     const end =
       live.startedAt.toMillis() +
-      duration() * 1000;
+      roundSeconds() * 1000;
 
     return Math.max(
       0,
@@ -142,21 +157,26 @@
     );
   }
 
-  // CURRENT GAME STATE
+  // GAME STAGE
 
   function stage() {
-    if (live.stage === "running") {
-      return remaining() <= 0
-        ? "expired"
-        : "running";
+
+    if (live.stage !== "running") {
+      return "idle";
     }
 
-    return "idle";
+    return (
+      live.startedAt?.toMillis &&
+      timeLeft() <= 0
+    )
+      ? "expired"
+      : "running";
   }
 
-  // SHOW STATUS MESSAGE
+  // STATUS MESSAGE
 
-  function showMessage(text, bad = false) {
+  function message(text, bad = false) {
+
     const el = $("actionMessage");
 
     if (!el) return;
@@ -164,98 +184,48 @@
     el.textContent = text;
 
     el.style.color = bad
-      ? "#ff9bad"
-      : "#b9f1dc";
-
-    if (!isAdmin) {
-      clearTimeout(messageTimer);
-
-      messageTimer = setTimeout(() => {
-        if (el.textContent === text) {
-          el.textContent = "";
-        }
-      }, 5000);
-    }
+      ? "#ff9eae"
+      : "#aff1ce";
   }
 
-  /*
-    IMPORTANT TIMER FIX
+  // PROTECT EDITABLE FIELDS DURING SAVING
 
-    The previous code refreshed the screen
-    BEFORE reading durationInput.
+  async function perform(work) {
 
-    That replaced 00:20 with the old timer.
-
-    This version reads and saves the input
-    before refreshing.
-  */
-
-  async function perform(task) {
     if (!authorized || busy) return;
 
     busy = true;
 
+    // Do not render here.
+    // The old code overwrote the input
+    // before reading its new value.
+
     try {
-      await task();
+
+      await work();
 
     } catch (err) {
-      console.error(err);
 
-      showMessage(
-        err?.message || "Operation failed.",
+      console.error(
+        "EDEX operation failed",
+        err
+      );
+
+      message(
+        err?.message ||
+        "Action failed. Check Firebase permissions.",
         true
       );
 
     } finally {
+
       busy = false;
+
       render();
     }
   }
 
-  // SESSION COUNTERS
-
-  function sessionCount(key) {
-    const baselineKey =
-      "baseline" +
-      key[0].toUpperCase() +
-      key.slice(1);
-
-    return Math.max(
-      0,
-      Number(stats[key] || 0) -
-      Number(stats[baselineKey] || 0)
-    );
-  }
-
-  function sessionStart() {
-    return (
-      stats.sessionResetAt?.toMillis?.() ||
-      0
-    );
-  }
-
-  function belongsToSession(record) {
-    const start = sessionStart();
-
-    return !start ||
-      (record.at?.toMillis?.() || 0) > start;
-  }
-
-  // DATE DISPLAY
-
-  function dateText(value) {
-    return value?.toDate
-      ? value.toDate().toLocaleString(
-          "en-US",
-          {
-            dateStyle: "medium",
-            timeStyle: "short"
-          }
-        )
-      : "Saving…";
-  }
-
-  // DRAW CURRENT PAGE
+  // SELECT CURRENT PAGE
 
   function render() {
     if (isAdmin) {
@@ -265,55 +235,57 @@
     }
   }
 
-  // VISITOR / ORGANIZER SCREEN
+  // VISITOR / ORGANIZER PAGE
 
   function renderVisitor() {
+
     const s = stage();
-    const left = remaining();
+    const left = timeLeft();
 
     $("timeText").textContent =
-      formatTime(left);
+      clockText(left);
 
     $("statusText").textContent =
       s === "running"
         ? "GUESS NOW"
         : s === "expired"
-          ? "TIME IS UP"
+          ? "TIME'S UP"
           : "READY";
 
     $("roundLabel").textContent =
-      "ROUND " + (live.roundId || 0);
+      "ROUND " + Number(live.roundId || 0);
 
     $("subtitle").textContent =
       s === "running"
-        ? "Feel the item and guess before time runs out!"
+        ? "Feel the mystery item and guess before time runs out!"
         : s === "expired"
-          ? "Time is up. Ask the organizer to record the result."
-          : "No looking! Reach inside the box and guess the mystery item.";
+          ? "Time is up! The organizer records the result."
+          : "No looking! Use your hands to guess what is hidden in the box.";
 
     $("clock").classList.toggle(
       "expired",
       s === "expired"
     );
 
-    // CIRCULAR TIMER
-
-    const circle = $("progress");
+    // CIRCULAR CLOCK
 
     const circumference =
       2 * Math.PI * 109;
 
-    circle.style.strokeDasharray =
+    $("progress").style.strokeDasharray =
       String(circumference);
 
-    circle.style.strokeDashoffset =
+    $("progress").style.strokeDashoffset =
       String(
         circumference *
         (
           1 -
-          Math.max(
-            0,
-            Math.min(1, left / duration())
+          Math.min(
+            1,
+            Math.max(
+              0,
+              left / roundSeconds()
+            )
           )
         )
       );
@@ -321,23 +293,23 @@
     // ORGANIZER BUTTONS
 
     $("startBtn").disabled =
-      busy ||
       !authorized ||
+      busy ||
       s !== "idle";
 
     $("winBtn").disabled =
-      busy ||
       !authorized ||
+      busy ||
       s !== "running";
 
     $("failBtn").disabled =
-      busy ||
       !authorized ||
+      busy ||
       !["running", "expired"].includes(s);
 
     $("resetRoundBtn").disabled =
-      busy ||
       !authorized ||
+      busy ||
       s === "idle";
 
     $("operatorControls").hidden =
@@ -350,48 +322,69 @@
       !authorized;
   }
 
+  // SESSION COUNTERS
+
+  function sessionCount(field) {
+
+    const baseline =
+      "baseline" +
+      field[0].toUpperCase() +
+      field.slice(1);
+
+    return Math.max(
+      0,
+      Number(stats[field] || 0) -
+      Number(stats[baseline] || 0)
+    );
+  }
+
   // ADMIN DASHBOARD
 
   function renderAdmin() {
+
     if (!authorized) return;
 
-    for (const field of [
+    [
       "played",
       "wins",
       "losses",
       "chocolates"
-    ]) {
+    ].forEach(field => {
+
       $(field).textContent =
         sessionCount(field).toLocaleString();
-    }
 
-    // CHOCOLATE INVENTORY
+    });
 
-    const total = stats.stockTotal;
+    // CHOCOLATE STOCK
+    // USE LIFETIME AWARDS
 
-    const tracked =
-      Number.isSafeInteger(total) &&
-      total >= 0;
+    const stock = stats.stockTotal;
 
-    $("stock").textContent = tracked
-      ? total.toLocaleString()
-      : "Not set";
+    const stockValid =
+      Number.isSafeInteger(stock) &&
+      stock >= 0;
+
+    $("stock").textContent =
+      stockValid
+        ? stock.toLocaleString()
+        : "Not set";
 
     $("remainingStock").textContent =
-      tracked
+      stockValid
         ? Math.max(
             0,
-            total -
+            stock -
             Number(stats.chocolates || 0)
           ).toLocaleString()
         : "Not set";
 
-    // TIMER
+    // TIMER DISPLAY
 
     const s = stage();
 
     $("adminTimer").textContent =
-      formatTime(remaining());
+      clockText(timeLeft());
 
     $("adminStage").textContent =
       s.toUpperCase();
@@ -411,148 +404,270 @@
 
     document.querySelectorAll(
       ".private-action"
-    ).forEach(button => {
-      button.disabled = busy;
+    ).forEach(el => {
+      el.disabled = busy;
     });
 
-    /*
-      SECOND TIMER FIX
-
-      Never overwrite a duration while the
-      organizer is editing it.
-    */
+    // IMPORTANT TIMER FIX:
+    // NEVER overwrite text that the
+    // organizer is currently editing.
 
     const input = $("durationInput");
 
     if (
-      input &&
-      !durationEdited &&
+      !durationDirty &&
       document.activeElement !== input
     ) {
-      input.value = formatTime(
-        settings.durationSec || 120
-      );
+
+      const text =
+        clockText(configuredSeconds());
+
+      if (input.value !== text) {
+        input.value = text;
+      }
     }
   }
 
-  // HISTORY TABLE
+  // SESSION START
+
+  function sessionStart() {
+
+    return (
+      stats.sessionResetAt?.toMillis?.() ||
+      0
+    );
+  }
+
+  function belongsToSession(record) {
+
+    const beginning = sessionStart();
+
+    return (
+      !beginning ||
+      (record.at?.toMillis?.() || 0) > beginning
+    );
+  }
+
+  // FORMAT DATE
+
+  function dateText(value) {
+
+    return value?.toDate
+      ? value.toDate().toLocaleString(
+          "en-US",
+          {
+            dateStyle: "medium",
+            timeStyle: "short"
+          }
+        )
+      : "Saving…";
+  }
+
+  // RENDER ROUND HISTORY
 
   function renderHistory() {
+
     if (!isAdmin || !authorized) return;
 
     const body = $("records");
+
     body.replaceChildren();
 
     const visible =
       history.filter(belongsToSession);
 
     if (!visible.length) {
+
       const row = body.insertRow();
-      const cell = row.insertCell();
 
-      cell.colSpan = 5;
+      row.insertCell().colSpan = 5;
 
-      cell.textContent =
+      row.cells[0].textContent =
         "No rounds in this session.";
 
       return;
     }
 
     for (const record of visible) {
+
       const row = body.insertRow();
 
-      const name =
+      const values = [
+
+        dateText(record.at),
+
         record.gameType === "guess-box"
           ? "Mystery Item"
-          : record.word || "Earlier Ball Game";
+          : record.word || "Earlier Ball Game",
 
-      const values = [
-        dateText(record.at),
-        name,
         record.outcome === "won"
           ? "WON"
           : "FAILED",
+
         record.chocolate || 0,
-        formatTime(record.elapsedSec || 0)
+
+        clockText(record.elapsedSec || 0)
+
       ];
 
-      values.forEach(value => {
+      values.forEach(text => {
+
         row.insertCell().textContent =
-          String(value);
+          String(text);
+
       });
     }
   }
 
-  // START NEXT ROUND
+  // SAVE TIMER
+  // READ INPUT FIRST, BEFORE REFRESH
+
+  async function saveDuration() {
+
+    const input = $("durationInput");
+
+    const requested =
+      parseTime(input.value);
+
+    durationDirty = true;
+
+    // SAVE IN FIREBASE
+    // ALSO UPDATE IDLE VISITOR TIMER
+
+    await db.runTransaction(async tx => {
+
+      const liveSnapshot =
+        await tx.get(liveRef);
+
+      tx.set(
+        settingsRef,
+        {
+          durationSec: requested
+        },
+        {
+          merge: true
+        }
+      );
+
+      if (
+        liveSnapshot.data()?.stage !== "running"
+      ) {
+
+        tx.set(
+          liveRef,
+          {
+            durationSec: requested
+          },
+          {
+            merge: true
+          }
+        );
+      }
+    });
+
+    settings = {
+      ...settings,
+      durationSec: requested
+    };
+
+    settingsKnown = true;
+
+    input.value =
+      clockText(requested);
+
+    durationDirty = false;
+
+    message(
+      "✅ Timer saved: " +
+      clockText(requested) +
+      " (" + requested + " seconds). " +
+      "Use Start Timer for the next round."
+    );
+  }
+
+  // START ROUND WITHOUT RANDOMIZER
 
   async function startRound() {
+
     await db.runTransaction(async tx => {
-      const [liveSnap, settingsSnap] =
+
+      const [liveDoc, settingDoc] =
         await Promise.all([
           tx.get(liveRef),
           tx.get(settingsRef)
         ]);
 
       const current =
-        liveSnap.data() || {};
+        liveDoc.data() || {};
 
-      if (current.stage === "running") {
+      if (
+        current.stage === "running"
+      ) {
         throw Error(
           "Finish or cancel the current round first."
         );
       }
 
-      const seconds =
+      const durationSec =
         Number(
-          settingsSnap.data()?.durationSec ||
+          settingDoc.data()?.durationSec ||
           120
         );
 
       if (
-        !Number.isSafeInteger(seconds) ||
-        seconds < 10 ||
-        seconds > 900
+        !Number.isSafeInteger(durationSec) ||
+        durationSec < 10 ||
+        durationSec > 900
       ) {
         throw Error(
-          "Save a valid timer setting first."
+          "Save a valid timer first. " +
+          "00:20 means 20 seconds."
         );
       }
 
-      tx.set(liveRef, {
-        stage: "running",
+      tx.set(
+        liveRef,
+        {
+          stage: "running",
 
-        roundId:
-          Number(current.roundId || 0) + 1,
+          roundId:
+            Number(current.roundId || 0) + 1,
 
-        durationSec: seconds,
+          durationSec,
 
-        startedAt:
-          FV.serverTimestamp(),
+          startedAt:
+            FV.serverTimestamp(),
 
-        word: "",
+          gameType: "guess-box",
 
-        gameType: "guess-box"
-
-      }, {merge: true});
+          word: ""
+        },
+        {
+          merge: true
+        }
+      );
     });
 
-    showMessage("Timer started!");
+    message("Timer started!");
   }
 
-  // SAVE WON OR FAILED
+  // WON / FAILED
 
   async function finishRound(won) {
-    const newRecord = historyRef.doc();
+
+    const recordRef =
+      historyRef.doc();
 
     await db.runTransaction(async tx => {
-      const [liveSnap, statsSnap] =
+
+      const [roundDoc, statDoc] =
         await Promise.all([
           tx.get(liveRef),
           tx.get(statsRef)
         ]);
 
       const round =
-        liveSnap.data() || {};
+        roundDoc.data() || {};
 
       if (
         round.stage !== "running" ||
@@ -563,92 +678,115 @@
         );
       }
 
-      const seconds =
-        Number(round.durationSec || 120);
+      const totalSec =
+        Number(
+          round.durationSec || 120
+        );
 
       const elapsed =
-        (
-          Date.now() -
-          round.startedAt.toMillis()
-        ) / 1000;
-
-      if (won && elapsed >= seconds) {
-        throw Error(
-          "Time is up. Choose FAILED."
+        Math.max(
+          0,
+          (
+            Date.now() -
+            round.startedAt.toMillis()
+          ) / 1000
         );
-      }
-
-      const savedStats =
-        statsSnap.data() || {};
 
       if (
         won &&
-        Number.isSafeInteger(
-          savedStats.stockTotal
-        ) &&
-        Number(savedStats.chocolates || 0) >=
-          savedStats.stockTotal
+        elapsed >= totalSec
+      ) {
+        throw Error(
+          "Time expired. Choose FAILED."
+        );
+      }
+
+      const saved =
+        statDoc.data() || {};
+
+      // DO NOT AWARD MORE THAN STOCK
+
+      if (
+        won &&
+        Number.isSafeInteger(saved.stockTotal) &&
+        Number(saved.chocolates || 0) >=
+          saved.stockTotal
       ) {
         throw Error(
           "No chocolates left in this game's stock."
         );
       }
 
-      // SAVE HISTORY
+      // SAVE HISTORICAL RESULT
 
-      tx.set(newRecord, {
-        gameType: "guess-box",
-        itemLabel: "Mystery Item",
-        word: "",
-        roundId: round.roundId,
+      tx.set(
+        recordRef,
+        {
+          gameType: "guess-box",
 
-        outcome:
-          won ? "won" : "lost",
+          itemLabel: "Mystery Item",
 
-        chocolate:
-          won ? 1 : 0,
+          word: "",
 
-        durationSec: seconds,
+          roundId: round.roundId || 0,
 
-        elapsedSec:
-          Math.max(
-            0,
+          outcome:
+            won ? "won" : "lost",
+
+          chocolate:
+            won ? 1 : 0,
+
+          durationSec: totalSec,
+
+          elapsedSec:
             Math.min(
-              seconds,
+              totalSec,
               Math.round(elapsed)
-            )
-          ),
+            ),
 
-        at: FV.serverTimestamp()
-      });
+          at:
+            FV.serverTimestamp()
+        }
+      );
 
       // UPDATE LIFETIME COUNTERS
 
-      tx.set(statsRef, {
-        played: FV.increment(1),
+      tx.set(
+        statsRef,
+        {
+          played:
+            FV.increment(1),
 
-        wins:
-          FV.increment(won ? 1 : 0),
+          wins:
+            FV.increment(won ? 1 : 0),
 
-        losses:
-          FV.increment(won ? 0 : 1),
+          losses:
+            FV.increment(won ? 0 : 1),
 
-        chocolates:
-          FV.increment(won ? 1 : 0)
-
-      }, {merge: true});
+          chocolates:
+            FV.increment(won ? 1 : 0)
+        },
+        {
+          merge: true
+        }
+      );
 
       // RESET LIVE ROUND
 
-      tx.set(liveRef, {
-        stage: "idle",
-        startedAt: null,
-        word: ""
-
-      }, {merge: true});
+      tx.set(
+        liveRef,
+        {
+          stage: "idle",
+          startedAt: null,
+          word: ""
+        },
+        {
+          merge: true
+        }
+      );
     });
 
-    showMessage(
+    message(
       won
         ? "🍫 WON! One chocolate recorded."
         : "FAILED. No chocolate recorded."
@@ -657,7 +795,8 @@
 
   // CANCEL CURRENT ROUND
 
-  async function resetRound() {
+  async function cancelRound() {
+
     if (!confirm(
       "Cancel this round without recording a result?"
     )) {
@@ -665,7 +804,9 @@
     }
 
     await db.runTransaction(async tx => {
-      const snap = await tx.get(liveRef);
+
+      const snap =
+        await tx.get(liveRef);
 
       if (
         !["running", "ready"].includes(
@@ -675,50 +816,28 @@
         return;
       }
 
-      tx.set(liveRef, {
-        stage: "idle",
-        startedAt: null,
-        word: ""
-
-      }, {merge: true});
+      tx.set(
+        liveRef,
+        {
+          stage: "idle",
+          startedAt: null,
+          word: ""
+        },
+        {
+          merge: true
+        }
+      );
     });
 
-    showMessage(
-      "Round cancelled. No chocolate counted."
-    );
-  }
-
-  // FIXED SAVE TIMER FUNCTION
-
-  async function saveDuration() {
-    const input = $("durationInput");
-
-    // READ NEW TIME BEFORE SCREEN REFRESH
-
-    const requested =
-      parseTime(input.value);
-
-    await settingsRef.set({
-      durationSec: requested
-
-    }, {merge: true});
-
-    settings.durationSec = requested;
-    durationEdited = false;
-
-    input.value =
-      formatTime(requested);
-
-    showMessage(
-      "✅ Timer saved: " +
-      formatTime(requested) +
-      " (" + requested + " seconds)."
+    message(
+      "Round cancelled; no chocolate counted."
     );
   }
 
   // SAVE CHOCOLATE STOCK
 
   async function saveStock() {
+
     const raw =
       $("stockInput").value.trim();
 
@@ -730,102 +849,125 @@
       total < 0
     ) {
       throw Error(
-        "Enter a whole number of chocolates."
+        "Enter a nonnegative whole number of chocolates."
       );
     }
 
     await db.runTransaction(async tx => {
-      const snap = await tx.get(statsRef);
 
-      const alreadyGiven =
+      const snap =
+        await tx.get(statsRef);
+
+      const given =
         Number(
           snap.data()?.chocolates || 0
         );
 
-      if (total < alreadyGiven) {
+      if (total < given) {
         throw Error(
-          "Total stock cannot be less than " +
-          alreadyGiven +
-          " chocolates already given."
+          "Stock cannot be below " +
+          given +
+          " already-awarded chocolates."
         );
       }
 
-      tx.set(statsRef, {
-        stockTotal: total
-      }, {merge: true});
+      tx.set(
+        statsRef,
+        {
+          stockTotal: total
+        },
+        {
+          merge: true
+        }
+      );
     });
 
     $("stockInput").value = "";
 
-    showMessage(
-      "Stock saved. Earlier chocolate awards remain counted."
+    message(
+      "Chocolate stock saved. " +
+      "Past awards remain counted."
     );
   }
 
-  // RESET SESSION WITHOUT DELETING HISTORY
+  // RESET SESSION ONLY
+  // PRESERVE OLD RECORDS AND STOCK
 
   async function resetSession() {
-    if (!hasStats || !hasHistory) {
+
+    if (
+      !statsReady ||
+      !historyReady
+    ) {
       throw Error(
-        "Wait until statistics and history finish loading."
+        "Wait for Firebase history to load first."
       );
     }
 
     if (!confirm(
-      "Start a new Box Game session?\n\n" +
-      "The displayed counts will start at zero.\n" +
-      "All previous records and chocolates " +
-      "already given will remain saved."
+      "Start a NEW session?\n\n" +
+      "Displayed counters will restart at zero.\n" +
+      "Old results and chocolates already given " +
+      "will remain saved."
     )) {
       return;
     }
 
     await db.runTransaction(async tx => {
-      const [liveSnap, statsSnap] =
+
+      const [roundDoc, statDoc] =
         await Promise.all([
           tx.get(liveRef),
           tx.get(statsRef)
         ]);
 
       if (
-        liveSnap.data()?.stage === "running"
+        roundDoc.data()?.stage === "running"
       ) {
         throw Error(
           "Finish or cancel the active round first."
         );
       }
 
-      const current =
-        statsSnap.data() || {};
+      const saved =
+        statDoc.data() || {};
 
-      tx.set(statsRef, {
-        baselinePlayed:
-          Number(current.played || 0),
+      tx.set(
+        statsRef,
+        {
+          baselinePlayed:
+            Number(saved.played || 0),
 
-        baselineWins:
-          Number(current.wins || 0),
+          baselineWins:
+            Number(saved.wins || 0),
 
-        baselineLosses:
-          Number(current.losses || 0),
+          baselineLosses:
+            Number(saved.losses || 0),
 
-        baselineChocolates:
-          Number(current.chocolates || 0),
+          baselineChocolates:
+            Number(saved.chocolates || 0),
 
-        sessionResetAt:
-          FV.serverTimestamp()
-
-      }, {merge: true});
+          sessionResetAt:
+            FV.serverTimestamp()
+        },
+        {
+          merge: true
+        }
+      );
     });
 
-    showMessage(
-      "Session reset. Previous history and chocolate stock preserved."
+    message(
+      "Session restarted. Older records " +
+      "and chocolate stock preserved."
     );
   }
 
-  // CSV FORMATTING
+  // SAFE CSV FORMAT
 
   function csvCell(value) {
-    let text = String(value ?? "");
+
+    let text =
+      String(value ?? "");
 
     if (/^\s*[=+@\-]/.test(text)) {
       text = "'" + text;
@@ -836,9 +978,10 @@
       '"';
   }
 
-  // EXPORT ALL RECORDS OR CURRENT SESSION
+  // EXPORT SESSION OR ALL HISTORY
 
-  async function exportCSV(allHistory) {
+  async function exportCSV(all) {
+
     const snap =
       await historyRef
         .orderBy("at", "desc")
@@ -847,96 +990,113 @@
     const records =
       snap.docs
         .map(doc => doc.data())
-        .filter(record =>
-          allHistory ||
-          belongsToSession(record)
+        .filter(rec =>
+          all ||
+          belongsToSession(rec)
         );
 
-    const rows = [[
+    const lines = [[
       "Date",
       "Game",
-      "Item or word",
+      "Item or previous word",
       "Round",
       "Result",
       "Chocolates",
-      "Time used seconds"
+      "Time used (seconds)"
     ]];
 
-    for (const record of records) {
-      rows.push([
-        record.at?.toDate?.().toISOString() || "",
+    for (const rec of records) {
 
-        record.gameType === "guess-box"
+      lines.push([
+
+        rec.at?.toDate?.().toISOString() || "",
+
+        rec.gameType === "guess-box"
           ? "Guess the Item in the Box"
           : "Earlier Ball Game",
 
-        record.gameType === "guess-box"
+        rec.gameType === "guess-box"
           ? "Mystery Item"
-          : record.word || "",
+          : rec.word || "",
 
-        record.roundId || "",
-        record.outcome || "",
-        record.chocolate || 0,
-        record.elapsedSec || 0
+        rec.roundId || "",
+
+        rec.outcome || "",
+
+        rec.chocolate || 0,
+
+        rec.elapsedSec || 0
+
       ]);
     }
 
-    const csv = "\uFEFF" +
-      rows.map(row =>
+    const content = "\uFEFF" +
+      lines.map(row =>
         row.map(csvCell).join(",")
       ).join("\r\n");
 
-    const url = URL.createObjectURL(
-      new Blob([csv], {
-        type: "text/csv;charset=utf-8"
-      })
-    );
+    const url =
+      URL.createObjectURL(
+        new Blob(
+          [content],
+          {
+            type:
+              "text/csv;charset=utf-8"
+          }
+        )
+      );
 
-    const link =
+    const anchor =
       document.createElement("a");
 
-    link.href = url;
+    anchor.href = url;
 
-    link.download = allHistory
-      ? "edex-box-all-history.csv"
-      : "edex-box-session.csv";
+    anchor.download = all
+      ? "box-game-all-history.csv"
+      : "box-game-session.csv";
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    document.body.appendChild(anchor);
+
+    anchor.click();
+    anchor.remove();
 
     setTimeout(
       () => URL.revokeObjectURL(url),
       1000
     );
 
-    showMessage("CSV exported.");
+    message("CSV exported.");
   }
 
-  // DATABASE LISTENERS
+  // FIREBASE LISTENERS
 
   function stopPrivate() {
-    privateListeners.forEach(
-      unsubscribe => unsubscribe()
-    );
 
-    privateListeners = [];
+    unsubs.forEach(fn => fn());
+
+    unsubs = [];
   }
 
-  function watchPrivate() {
-    privateListeners.push(
+  function listenPrivate() {
+
+    // SAVED TIMER
+
+    unsubs.push(
       settingsRef.onSnapshot(
         snap => {
+
           settings = {
-            durationSec: 120,
+            ...settings,
             ...(snap.data() || {})
           };
 
-          render();
-        },
+          settingsKnown = true;
 
-        err => showMessage(
-          err.message,
+          render();
+
+        },
+        err => message(
+          "Settings: " + err.message,
           true
         )
       )
@@ -944,41 +1104,48 @@
 
     if (!isAdmin) return;
 
-    privateListeners.push(
+    // STOCK AND COUNTERS
+
+    unsubs.push(
       statsRef.onSnapshot(
         snap => {
+
           stats = snap.data() || {};
-          hasStats = true;
+
+          statsReady = true;
 
           render();
           renderHistory();
-        },
 
-        err => showMessage(
-          err.message,
+        },
+        err => message(
+          "Stats: " + err.message,
           true
         )
       )
     );
 
-    privateListeners.push(
+    // ROUND HISTORY
+
+    unsubs.push(
       historyRef
         .orderBy("at", "desc")
         .limit(200)
         .onSnapshot(
           snap => {
-            history = snap.docs.map(
-              doc => doc.data()
-            );
 
-            hasHistory = true;
+            history =
+              snap.docs.map(
+                doc => doc.data()
+              );
 
-            render();
+            historyReady = true;
+
             renderHistory();
-          },
 
-          err => showMessage(
-            err.message,
+          },
+          err => message(
+            "History: " + err.message,
             true
           )
         )
@@ -988,7 +1155,9 @@
   // CONNECT BUTTONS
 
   function bind(id, task) {
+
     if ($(id)) {
+
       $(id).addEventListener(
         "click",
         () => perform(task)
@@ -996,7 +1165,10 @@
     }
   }
 
-  bind("startBtn", startRound);
+  bind(
+    "startBtn",
+    startRound
+  );
 
   bind(
     "winBtn",
@@ -1010,16 +1182,29 @@
 
   bind(
     "resetRoundBtn",
-    resetRound
+    cancelRound
   );
 
-  if (isAdmin) {
-    // REMEMBER THE VALUE BEING TYPED
+  // ADMIN-ONLY BUTTONS
 
-    $("durationInput").addEventListener(
+  if (isAdmin) {
+
+    const input =
+      $("durationInput");
+
+    // KEEP THE VALUE BEING TYPED
+
+    input.addEventListener(
       "input",
       () => {
-        durationEdited = true;
+        durationDirty = true;
+      }
+    );
+
+    input.addEventListener(
+      "change",
+      () => {
+        durationDirty = true;
       }
     );
 
@@ -1054,19 +1239,21 @@
   $("loginForm").addEventListener(
     "submit",
     async event => {
+
       event.preventDefault();
 
       $("loginError").textContent = "";
 
       try {
-        const credentials =
+
+        const userCredential =
           await auth.signInWithEmailAndPassword(
             $("email").value.trim(),
             $("password").value
           );
 
         if (
-          credentials.user.uid !== ADMIN_UID
+          userCredential.user.uid !== ADMIN_UID
         ) {
           await auth.signOut();
 
@@ -1078,8 +1265,10 @@
         $("password").value = "";
 
       } catch (err) {
+
         $("loginError").textContent =
-          err?.message || "Login failed.";
+          err?.message ||
+          "Login failed.";
       }
     }
   );
@@ -1090,6 +1279,7 @@
     $("signout") || $("signOutBtn");
 
   if (signout) {
+
     signout.onclick = () => {
       if (!busy) {
         auth.signOut();
@@ -1097,51 +1287,58 @@
     };
   }
 
-  // FIREBASE AUTH STATE
+  // AUTHENTICATION
 
-  auth.onAuthStateChanged(async user => {
-    authorized =
-      Boolean(
+  auth.onAuthStateChanged(
+    async user => {
+
+      authorized = Boolean(
         user &&
         user.uid === ADMIN_UID
       );
 
-    stopPrivate();
+      stopPrivate();
 
-    if (user && !authorized) {
-      await auth.signOut();
-      return;
+      if (user && !authorized) {
+
+        await auth.signOut();
+
+        return;
+      }
+
+      if (authorized) {
+        listenPrivate();
+      }
+
+      if (isAdmin) {
+
+        $("adminLogin").hidden =
+          authorized;
+
+        $("adminContent").hidden =
+          !authorized;
+
+      } else {
+
+        $("operatorControls").hidden =
+          !authorized;
+
+        $("access").hidden =
+          authorized;
+
+        $("signedIn").hidden =
+          !authorized;
+      }
+
+      render();
     }
+  );
 
-    if (authorized) {
-      watchPrivate();
-    }
-
-    if (isAdmin) {
-      $("adminLogin").hidden =
-        authorized;
-
-      $("adminContent").hidden =
-        !authorized;
-
-    } else {
-      $("operatorControls").hidden =
-        !authorized;
-
-      $("access").hidden =
-        authorized;
-
-      $("signedIn").hidden =
-        !authorized;
-    }
-
-    render();
-  });
-
-  // SYNCHRONIZED LIVE GAME
+  // LIVE TIMER FROM FIREBASE
 
   liveRef.onSnapshot(
     snap => {
+
       live = {
         stage: "idle",
         roundId: 0,
@@ -1150,27 +1347,30 @@
       };
 
       if ($("connection")) {
+
         $("connection").textContent =
           "● LIVE";
       }
 
       render();
-    },
 
+    },
     err => {
+
       if ($("connection")) {
+
         $("connection").textContent =
           "● OFFLINE";
       }
 
-      showMessage(
-        err.message,
+      message(
+        "Live timer: " + err.message,
         true
       );
     }
   );
 
-  // UPDATE LIVE CLOCK
+  // REFRESH CLOCK EVERY 200 MS
 
   setInterval(render, 200);
 
