@@ -4,7 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>EDEX | Guess the Item in the Box Admin</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
@@ -14,7 +16,10 @@
   --txt:#f9f5ff;
   --muted:#bdb3d1;
 }
-* { box-sizing:border-box; }
+
+* {
+  box-sizing:border-box;
+}
 
 body {
   margin:0;
@@ -22,16 +27,33 @@ body {
   color:var(--txt);
   font-family:Outfit,Arial,sans-serif;
   background:radial-gradient(
-    ellipse at 50% 0%,#50336e 0,
-    #1a1532 48%,#090a1c 100%
+    ellipse at 50% 0%,
+    #50336e 0%,
+    #1a1532 48%,
+    #090a1c 100%
   );
 }
 
-[hidden] { display:none!important; }
-button,input { font:inherit; }
-button { cursor:pointer; }
-button:disabled { opacity:.5;cursor:default; }
-a { text-decoration:none; }
+[hidden] {
+  display:none!important;
+}
+
+button,input {
+  font:inherit;
+}
+
+button {
+  cursor:pointer;
+}
+
+button:disabled {
+  opacity:.5;
+  cursor:default;
+}
+
+a {
+  text-decoration:none;
+}
 
 .wrap {
   width:min(1160px,calc(100% - 30px));
@@ -50,43 +72,58 @@ a { text-decoration:none; }
   display:block;
   color:#b5a7cb;
   font-size:10px;
-  letter-spacing:.22em;
+  letter-spacing:.2em;
 }
 
-/* THREE ADMIN TABS */
+/* FOUR ADMIN TABS */
 
 .tabs {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:11px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
   margin:25px 0 15px;
 }
 
 .tabs a {
+  display:flex;
+  align-items:center;
+  justify-content:center;
   border:1px solid #8a6caa;
   border-radius:13px;
-  min-height:52px;
+  min-height:55px;
   background:#453256;
   color:#f5eaff;
   text-align:center;
-  padding:15px 8px;
+  padding:12px 8px;
   font-weight:900;
-  font-size:13px;
+  font-size:12px;
+}
+
+.tabs a:hover {
+  background:#614876;
 }
 
 .tabs a.active {
-  background:linear-gradient(110deg,#ffe2a2,#edc16c);
+  background:linear-gradient(
+    110deg,
+    #ffe2a2,
+    #edc16c
+  );
   color:#26190a;
   border-color:#ffe2a2;
 }
 
-/* VISITOR PAGE LINK */
+/* VISITOR BUTTON */
 
 .visitor {
   display:block;
   width:min(100%,500px);
   margin:0 auto 25px;
-  background:linear-gradient(100deg,#ffe3a2,#edc16c);
+  background:linear-gradient(
+    100deg,
+    #ffe3a2,
+    #edc16c
+  );
   border:1px solid #ffe2a2;
   border-radius:13px;
   text-align:center;
@@ -95,7 +132,7 @@ a { text-decoration:none; }
   padding:15px;
 }
 
-/* PANELS */
+/* DASHBOARD */
 
 .panel {
   border:1px solid #5f5278;
@@ -116,8 +153,15 @@ h1 em {
   color:var(--gold);
 }
 
-h2 { margin:0 0 12px;font-size:21px; }
-p { color:var(--muted);line-height:1.55; }
+h2 {
+  margin:0 0 12px;
+  font-size:21px;
+}
+
+p {
+  color:var(--muted);
+  line-height:1.55;
+}
 
 .eyebrow {
   color:#dcc2ff;
@@ -188,7 +232,9 @@ label {
   margin-top:16px;
 }
 
-.error { color:#ff9cb1; }
+.error {
+  color:#ff9cb1;
+}
 
 /* STATISTICS */
 
@@ -198,7 +244,9 @@ label {
   gap:12px;
 }
 
-.stats .panel { min-height:130px; }
+.stats .panel {
+  min-height:130px;
+}
 
 .stats small {
   color:#c4b2dc;
@@ -213,7 +261,7 @@ label {
   margin-top:9px;
 }
 
-/* CONTROL PANELS */
+/* TIMER AND INVENTORY */
 
 .two {
   display:grid;
@@ -221,7 +269,9 @@ label {
   gap:15px;
 }
 
-.two .panel { margin:0; }
+.two .panel {
+  margin:0;
+}
 
 .stock {
   display:grid;
@@ -255,7 +305,9 @@ label {
   gap:10px;
 }
 
-.buttons button { flex:1; }
+.buttons button {
+  flex:1;
+}
 
 .timer {
   font-size:60px;
@@ -273,7 +325,7 @@ label {
   letter-spacing:.2em;
 }
 
-/* RECORDS */
+/* HISTORY */
 
 .tablewrap {
   overflow:auto;
@@ -309,37 +361,72 @@ th {
   min-height:22px;
 }
 
-.note { font-size:12px; }
-.signout { margin-left:auto; }
+.note {
+  font-size:12px;
+}
+
+.signout {
+  margin-left:auto;
+}
 
 @media(max-width:850px) {
   .stats {
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:repeat(
+      2,minmax(0,1fr)
+    );
   }
-  .two { grid-template-columns:1fr; }
-  .two .panel { margin:7px 0; }
+
+  .two {
+    grid-template-columns:1fr;
+  }
+
+  .two .panel {
+    margin:7px 0;
+  }
+
+  .tabs {
+    grid-template-columns:repeat(
+      2,minmax(0,1fr)
+    );
+  }
 }
 
 @media(max-width:550px) {
-  .tabs { gap:5px; }
-  .tabs a { font-size:11px;padding:11px 4px; }
-  .panel { padding:16px; }
-  .buttons button { flex:1 1 100%; }
+  .tabs {
+    gap:7px;
+  }
+
+  .tabs a {
+    font-size:11px;
+    padding:11px 5px;
+  }
+
+  .panel {
+    padding:16px;
+  }
+
+  .buttons button {
+    flex:1 1 100%;
+  }
 }
 </style>
 </head>
 
 <body>
+
 <div class="wrap">
 
   <header class="brand">
     ✦ EDEX
-    <small>GUESS THE ITEM IN THE BOX · ADMIN</small>
+    <small>
+      GUESS THE ITEM IN THE BOX · ADMIN
+    </small>
   </header>
 
-  <!-- THREE ADMIN NAVIGATION TABS -->
+  <!-- FOUR ADMIN TABS -->
 
-  <nav class="tabs" aria-label="EDEX Admin navigation">
+  <nav class="tabs"
+       aria-label="EDEX Admin navigation">
 
     <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
       ✦ Quiz Admin
@@ -347,7 +434,7 @@ th {
 
     <a class="active"
        aria-current="page"
-       href="admin.html">
+       href="https://freshlook10-alt.github.io/Edex-Word-Portal/admin.html">
       📦 Guess the Item in the Box
     </a>
 
@@ -355,9 +442,13 @@ th {
       ⏱ Timer Admin
     </a>
 
+    <a href="https://freshlook10-alt.github.io/Edex-Word-Portal/memory-admin.html">
+      🧠 Memory Shuffle Admin
+    </a>
+
   </nav>
 
-  <!-- OPENS VISITOR / ORGANIZER IN NEW TAB -->
+  <!-- OPEN BOX GAME VISITOR SCREEN -->
 
   <a class="visitor"
      href="index.html"
@@ -368,9 +459,13 @@ th {
 
   <!-- LOGIN -->
 
-  <section id="adminLogin" class="panel login">
+  <section id="adminLogin"
+           class="panel login">
 
-    <div class="eyebrow">✦ AUTHORIZED ORGANIZER</div>
+    <div class="eyebrow">
+      ✦ AUTHORIZED ORGANIZER
+    </div>
+
     <h1>Box Game <em>Admin.</em></h1>
 
     <p>
@@ -380,19 +475,26 @@ th {
 
     <form id="loginForm">
 
-      <label for="email">Email</label>
+      <label for="email">
+        Email
+      </label>
+
       <input id="email"
              type="email"
              autocomplete="username"
              required>
 
-      <label for="password">Password</label>
+      <label for="password">
+        Password
+      </label>
+
       <input id="password"
              type="password"
              autocomplete="current-password"
              required>
 
-      <button class="btn gold" type="submit">
+      <button class="btn gold"
+              type="submit">
         Open Admin
       </button>
 
@@ -401,6 +503,7 @@ th {
          role="alert"></p>
 
     </form>
+
   </section>
 
   <!-- MAIN ADMIN DASHBOARD -->
@@ -430,7 +533,7 @@ th {
 
     </div>
 
-    <!-- GAME COUNTERS -->
+    <!-- STATISTICS -->
 
     <div class="stats">
 
@@ -450,7 +553,9 @@ th {
       </div>
 
       <div class="panel">
-        <small>CHOCOLATES THIS SESSION 🍫</small>
+        <small>
+          CHOCOLATES THIS SESSION 🍫
+        </small>
         <strong id="chocolates">0</strong>
       </div>
 
@@ -458,21 +563,26 @@ th {
 
     <div class="two">
 
-      <!-- TIMER -->
+      <!-- LIVE TIMER -->
 
       <section class="panel">
 
-        <div class="eyebrow">01 / LIVE TIMER</div>
+        <div class="eyebrow">
+          01 / LIVE TIMER
+        </div>
 
-        <div class="timer" id="adminTimer">
+        <div class="timer"
+             id="adminTimer">
           02:00
         </div>
 
-        <div class="stage" id="adminStage">
+        <div class="stage"
+             id="adminStage">
           IDLE
         </div>
 
-        <div class="buttons" style="margin:18px 0">
+        <div class="buttons"
+             style="margin:18px 0">
 
           <button class="btn gold"
                   id="startBtn"
@@ -505,9 +615,10 @@ th {
         </label>
 
         <input id="durationInput"
+               type="text"
                value="02:00"
                maxlength="5"
-               placeholder="01:30">
+               placeholder="00:20">
 
         <button class="btn private-action"
                 id="saveDurationBtn"
@@ -517,13 +628,15 @@ th {
         </button>
 
         <p class="note">
-          Examples: 01:30, 02:00, 02:30.
-          No randomizer or Arabic word list.
+          Examples:
+          00:20 = 20 seconds,
+          00:30 = 30 seconds,
+          01:30 = 90 seconds.
         </p>
 
       </section>
 
-      <!-- CHOCOLATE STOCK -->
+      <!-- CHOCOLATE INVENTORY -->
 
       <section class="panel">
 
@@ -565,24 +678,25 @@ th {
         </button>
 
         <p class="note">
-          Chocolates already distributed stay deducted
-          when starting a new session. This stock is
-          still for this game, not yet shared across
-          Quiz and Timer.
+          Chocolates already distributed remain
+          deducted when a new session starts.
         </p>
 
       </section>
 
     </div>
 
-    <!-- ROUND HISTORY AND RESET -->
+    <!-- ROUND HISTORY -->
 
     <section class="panel">
 
       <div class="row">
 
         <div>
-          <div class="eyebrow">03 / HISTORY</div>
+          <div class="eyebrow">
+            03 / HISTORY
+          </div>
+
           <h2>Played Rounds</h2>
         </div>
 
@@ -637,9 +751,10 @@ th {
       </div>
 
       <p class="note">
-        Reset Session starts the displayed counts
-        at zero. Older records remain in Firebase
-        and All History CSV. Chocolates are not refunded.
+        Reset Session starts displayed counters
+        from zero. Earlier records remain in
+        Firebase and All History CSV.
+        Chocolates are not refunded.
       </p>
 
       <p class="notice"
@@ -649,20 +764,16 @@ th {
     </section>
 
   </section>
+
 </div>
 
-<!-- EXISTING FIREBASE LIBRARIES -->
+<!-- EXISTING FIREBASE FILES -->
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
 
-<!-- KEEP YOUR ORIGINAL FIREBASE CONFIG -->
-
 <script src="firebase-config.js"></script>
-
-<!-- NEW APP.JS FROM STEP 3 -->
-
 <script src="app.js"></script>
 
 </body>
