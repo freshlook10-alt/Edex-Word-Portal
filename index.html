@@ -4,257 +4,537 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#090b21">
-<title>EDEX | The Word Portal</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<title>EDEX | Guess the Item in the Box</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
-.edex-navigation {
-  max-width:1100px;
-  margin:0 auto;
-  padding:12px 22px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  justify-content:center;
+:root {
+  color-scheme:dark;
+  --gold:#f8d991;
+  --lav:#c5a6fa;
+  --txt:#f9f5ff;
+  --muted:#bab1d1;
+}
+
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  min-height:100vh;
+  color:var(--txt);
+  font-family:Outfit,Arial,sans-serif;
+  background:radial-gradient(
+    ellipse at 50% 7%,#583579 0,
+    #21193f 43%,#0a0a1c 100%
+  );
+}
+
+body:before {
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:.3;
+  background-image:radial-gradient(#ffffff 1px,transparent 1px);
+  background-size:44px 44px;
+}
+
+[hidden] { display:none!important; }
+button,input { font:inherit; }
+
+.top {
   position:relative;
-  z-index:5
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  padding:20px;
+  max-width:1040px;
+  margin:auto;
 }
-.edex-navigation a {
-  padding:11px 16px;
-  border:1px solid #886da6;
-  border-radius:12px;
-  background:#45355d;
-  color:#f8efff;
-  font:800 12px Outfit,Arial,sans-serif;
-  text-decoration:none;
-  text-align:center
+
+.brand {
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:.15em;
+  color:var(--gold);
 }
-.edex-navigation a:hover {
-  background:#675080
+
+.brand small {
+  display:block;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:.2em;
 }
-.edex-navigation a.primary {
-  color:#302115;
-  background:#f7d895;
-  border-color:#f7d895
+
+#connection {
+  font-size:11px;
+  color:#83dfb1;
+  font-weight:800;
 }
-@media(max-width:600px) {
-  .edex-navigation a {flex:1}
+
+.wrap {
+  position:relative;
+  max-width:840px;
+  padding:18px 20px 40px;
+  margin:auto;
+  text-align:center;
+}
+
+.eyebrow {
+  font-size:11px;
+  color:var(--gold);
+  font-weight:900;
+  letter-spacing:.27em;
+}
+
+h1 {
+  font-size:clamp(37px,6vw,66px);
+  margin:12px 0 7px;
+  letter-spacing:-.05em;
+}
+
+h1 em {
+  font-style:normal;
+  color:var(--gold);
+}
+
+p {
+  color:var(--muted);
+  line-height:1.6;
+}
+
+.subtitle {
+  max-width:580px;
+  margin:0 auto 17px;
+}
+
+.boxart {
+  font-size:70px;
+  line-height:1;
+  margin-top:16px;
+  filter:drop-shadow(0 8px 25px #f4bc7370);
+}
+
+/* TIMER */
+
+.clock {
+  position:relative;
+  width:min(290px,80vw);
+  aspect-ratio:1;
+  margin:19px auto;
+  display:grid;
+  place-items:center;
+}
+
+.clock svg {
+  position:absolute;
+  width:100%;
+  height:100%;
+  transform:rotate(-90deg);
+}
+
+.track,.progress {
+  fill:none;
+  stroke-width:10;
+}
+
+.track { stroke:#5d537e; }
+
+.progress {
+  stroke:#ecd294;
+  stroke-linecap:round;
+  transition:stroke-dashoffset .15s linear;
+}
+
+.clock.expired .progress {
+  stroke:#ff879e;
+}
+
+.clock-center {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:74%;
+  aspect-ratio:1;
+  border-radius:50%;
+  background:#17142fcf;
+  box-shadow:inset 0 0 40px #bd8af528;
+}
+
+#timeText {
+  font-size:clamp(53px,10vw,72px);
+  letter-spacing:-.06em;
+  font-weight:900;
+}
+
+#statusText {
+  font-size:11px;
+  letter-spacing:.19em;
+  color:var(--gold);
+  font-weight:800;
+}
+
+/* ORGANIZER PANEL */
+
+.panel {
+  border:1px solid #74638c;
+  background:#1d1b38e8;
+  border-radius:20px;
+  padding:21px;
+  margin:20px auto;
+  box-shadow:0 15px 45px #0005;
+  text-align:left;
+}
+
+.operator { max-width:580px; }
+
+.headrow {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  color:var(--gold);
+  font-size:12px;
+  letter-spacing:.12em;
+  font-weight:900;
+}
+
+.btn {
+  border:0;
+  border-radius:13px;
+  padding:15px 17px;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  color:#1e1630;
+  background:var(--gold);
+}
+
+.btn:hover:not(:disabled) {
+  filter:brightness(1.08);
+}
+
+.btn:disabled {
+  opacity:.4;
+  cursor:default;
+}
+
+.btn.start {
+  width:100%;
+  margin:17px 0 12px;
+  background:linear-gradient(110deg,#ae9bff,#95dfed);
+}
+
+.results {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.btn.win { background:#f8d991; }
+
+.btn.fail {
+  background:#734351;
+  color:#ffe4e8;
+}
+
+.btn.reset {
+  background:#38334e;
+  color:#e5d9fa;
+  border:1px solid #796b9a;
+  margin-top:12px;
+  width:100%;
+}
+
+/* LOGIN */
+
+details { max-width:520px; }
+
+summary {
+  cursor:pointer;
+  font-weight:900;
+  color:var(--gold);
+}
+
+label {
+  display:block;
+  margin:12px 0 6px;
+  color:#dfd4ee;
+  font-size:13px;
+  font-weight:800;
+}
+
+input {
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #716487;
+  background:#0b0c21;
+  color:white;
+}
+
+form button {
+  margin-top:15px;
+  width:100%;
+}
+
+.error { color:#ff93a9!important; }
+
+.notice {
+  min-height:20px;
+  color:#a7f0cc;
+  font-size:14px;
+}
+
+.signed-in {
+  max-width:580px;
+  margin:20px auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  color:#b9f1dc;
+  font-size:13px;
+}
+
+.signed-in a { color:var(--gold); }
+
+.signed-in button {
+  background:transparent;
+  color:#e3d7f8;
+  border:1px solid #776b94;
+  border-radius:10px;
+  padding:9px;
+  cursor:pointer;
+}
+
+footer {
+  position:relative;
+  padding:22px;
+  text-align:center;
+  font-size:11px;
+  letter-spacing:.25em;
+  color:#9c92b8;
+}
+
+@media(max-width:560px) {
+  .results { grid-template-columns:1fr; }
+  .top { padding:14px; }
+  .wrap { padding:6px 13px 28px; }
+  .boxart { font-size:56px; }
 }
 </style>
 </head>
 
 <body>
 
-<div class="aurora"></div>
-<div class="dust"></div>
+<header class="top">
 
-<header class="topbar">
-  <a class="brand" href="index.html">
-    <span class="gem">✦</span>
-    <span>
-      EDEX
-      <small>THE WORD PORTAL</small>
-    </span>
-  </a>
-
-  <div class="toplinks">
-    <span class="live-dot" id="connection">
-      ● CONNECTING
-    </span>
+  <div class="brand">
+    ✦ EDEX
+    <small>GUESS THE ITEM IN THE BOX</small>
   </div>
+
+  <span id="connection">
+    ● CONNECTING
+  </span>
+
 </header>
 
-<nav class="edex-navigation">
-  <a href="admin.html" class="primary">
-    ← Back to Ball Admin
-  </a>
+<main class="wrap">
 
-  <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
-    ← Main EDEX Admin
-  </a>
-</nav>
+  <div class="eyebrow">
+    ✦ FEEL IT · GUESS IT · WIN IT ✦
+  </div>
 
-<main class="screen">
+  <h1>
+    Guess the <em>Item in the Box.</em>
+  </h1>
 
-  <section class="hero">
-    <div class="orbit orbit-one"></div>
-    <div class="orbit orbit-two"></div>
+  <p id="subtitle" class="subtitle">
+    No looking! Reach inside the box
+    and guess the mystery item.
+  </p>
 
-    <div class="eyebrow">
-      ✧ EDEX · ARABIC EDITION ✧
+  <!-- THE MYSTERY BOX -->
+
+  <div class="boxart" aria-hidden="true">
+    📦
+  </div>
+
+  <!-- COUNTDOWN TIMER -->
+
+  <div class="clock"
+       id="clock"
+       aria-label="Countdown timer">
+
+    <svg viewBox="0 0 260 260"
+         aria-hidden="true">
+
+      <circle cx="130"
+              cy="130"
+              r="109"
+              class="track"/>
+
+      <circle cx="130"
+              cy="130"
+              r="109"
+              class="progress"
+              id="progress"/>
+
+    </svg>
+
+    <div class="clock-center">
+
+      <strong id="timeText">
+        02:00
+      </strong>
+
+      <span id="statusText">
+        READY
+      </span>
+
     </div>
 
-    <h1>
-      Unlock the <em>Word.</em>
-    </h1>
+  </div>
 
-    <p class="intro" id="prompt">
-      A new challenge awaits.
-    </p>
-
-    <div class="five" dir="rtl">
-      <span>ا</span>
-      <span>ب</span>
-      <span>ت</span>
-      <span>ث</span>
-      <span>ج</span>
-    </div>
-
-    <!-- WORD DISPLAY -->
-
-    <div class="word-box" id="wordBox">
-      <div class="word" id="word" dir="rtl">
-        ✦
-      </div>
-      <div class="shine"></div>
-    </div>
-
-    <!-- TIMER -->
-
-    <div class="count-label">
-      THE COUNTDOWN
-    </div>
-
-    <div class="timer" id="timer">
-      <svg viewBox="0 0 200 200"
-           aria-hidden="true">
-        <circle
-          class="track"
-          cx="100"
-          cy="100"
-          r="88"></circle>
-
-        <circle
-          class="ring"
-          id="ring"
-          cx="100"
-          cy="100"
-          r="88"></circle>
-      </svg>
-
-      <div class="timer-face">
-        <strong id="time">02:00</strong>
-        <span id="phase">STANDBY</span>
-      </div>
-    </div>
-
-    <p class="hero-foot" id="message">
-      THE NEXT WORD IS WAITING
-    </p>
-  </section>
+  <p id="actionMessage"
+     class="notice"
+     role="status"></p>
 
   <!-- ORGANIZER CONTROLS -->
 
-  <section class="operator panel"
-           id="operator"
+  <section class="panel operator"
+           id="operatorControls"
            hidden>
 
-    <div class="panel-title">
-      <span>✦ ORGANIZER CONTROLS</span>
-      <span id="controlStatus">READY</span>
-    </div>
+    <div class="headrow">
 
-    <div class="controls">
-      <button class="btn lavender"
-              id="randomBtn">
-        ✧ Randomize Word
-      </button>
-
-      <button class="btn aqua"
-              id="startBtn">
-        ▶ Start Timer
-      </button>
-
-      <button class="btn gold"
-              id="winBtn">
-        ✓ Completed + Chocolate Given 🍫
-      </button>
-
-      <button class="btn dark"
-              id="loseBtn">
-        ✕ Not Won — No Chocolate
-      </button>
-    </div>
-
-    <div class="duration-control">
-      <label for="minutes">
-        TIME FOR EVERY ROUND (MINUTES)
-      </label>
-
-      <input type="number"
-             id="minutes"
-             min="0.25"
-             max="15"
-             step="0.25"
-             value="2">
-
-      <button class="btn outline"
-              id="saveTime">
-        Save Time
-      </button>
-
-      <span id="timeSaved">
-        Changes apply to future rounds
+      <span>
+        ORGANIZER CONTROLS
       </span>
+
+      <span id="roundLabel">
+        ROUND 0
+      </span>
+
     </div>
 
-    <div class="operator-foot">
-      <span id="usedCount">0 words used</span>
+    <button class="btn start"
+            id="startBtn"
+            type="button">
+      ▶ START TIMER
+    </button>
 
-      <button class="text-btn"
-              id="signout">
-        Organizer Sign Out
+    <div class="results">
+
+      <button class="btn win"
+              id="winBtn"
+              type="button">
+        🍫 WON — GIVE CHOCOLATE
       </button>
+
+      <button class="btn fail"
+              id="failBtn"
+              type="button">
+        ✕ FAILED — NO CHOCOLATE
+      </button>
+
     </div>
+
+    <button class="btn reset"
+            id="resetRoundBtn"
+            type="button">
+      ↺ Cancel Current Round
+    </button>
+
   </section>
 
   <!-- ORGANIZER LOGIN -->
 
-  <details id="access" class="access panel">
-    <summary>✦ Organizer access</summary>
+  <details class="panel" id="access">
+
+    <summary>
+      ✦ Organizer access
+    </summary>
 
     <form id="loginForm">
-      <input type="email"
-             id="email"
-             placeholder="Organizer email"
+
+      <label for="email">
+        Email
+      </label>
+
+      <input id="email"
+             type="email"
              autocomplete="username"
              required>
 
-      <input type="password"
-             id="password"
-             placeholder="Password"
+      <label for="password">
+        Password
+      </label>
+
+      <input id="password"
+             type="password"
              autocomplete="current-password"
              required>
 
-      <button class="btn aqua"
-              type="submit">
-        Unlock Controls
+      <button class="btn" type="submit">
+        Unlock Organizer Controls
       </button>
+
+      <p class="error"
+         id="loginError"
+         role="alert"></p>
+
     </form>
 
-    <p id="loginError" class="error"></p>
   </details>
 
-  <footer>
-    EDEX EXPERIENCE
-    <span>✧</span>
-    A LITTLE MAGIC IN EVERY LETTER
-  </footer>
+  <!-- SIGNED-IN ORGANIZER -->
+
+  <div class="signed-in"
+       id="signedIn"
+       hidden>
+
+    <span>Organizer mode active</span>
+
+    <a href="admin.html"
+       target="_blank"
+       rel="noopener">
+      Admin Dashboard ↗
+    </a>
+
+    <button id="signOutBtn"
+            type="button">
+      Sign Out
+    </button>
+
+  </div>
 
 </main>
 
-<div class="toast"
-     id="toast"
-     role="status"
-     aria-live="polite"></div>
+<footer>
+  EDEX EXPERIENCE ✦ MYSTERY BOX CHALLENGE
+</footer>
+
+<!-- FIREBASE LIBRARIES -->
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
+<!-- YOUR EXISTING CONFIGURATION -->
+
 <script src="firebase-config.js"></script>
+
+<!-- NEW GAME LOGIC -->
+
 <script src="app.js"></script>
 
 </body>
