@@ -1,1122 +1,669 @@
 
-/*
- EDEX — GUESS THE ITEM IN THE BOX
-
- Complete game logic.
- Uses the existing Firebase project.
-
- Firebase collections:
- wordPortal/live
- wordSettings/main
- wordStats/total
- wordHistory
-
- Keeps existing records and chocolate totals.
- No word randomizer.
-*/
-
-(() => {
-  "use strict";
-
-  const $ = id => document.getElementById(id);
-
-  const isAdmin = Boolean($("adminContent"));
-
-  const liveRef =
-    db.collection("wordPortal").doc("live");
-
-  const settingsRef =
-    db.collection("wordSettings").doc("main");
-
-  const statsRef =
-    db.collection("wordStats").doc("total");
-
-  const historyRef =
-    db.collection("wordHistory");
-
-  const FV =
-    firebase.firestore.FieldValue;
-
-  let live = {
-    stage:"idle",
-    roundId:0,
-    durationSec:120
-  };
-
-  let settings = {
-    durationSec:120
-  };
-
-  let stats = {};
-  let history = [];
-
-  let authorized = false;
-  let busy = false;
-
-  let unsubscribePrivate = [];
-
-  let hasStats = false;
-  let hasHistory = false;
-
-  let messageTimer;
-
-  // TIME FORMAT
-
-  function seconds(value) {
-    const n = Math.max(0,Math.ceil(value));
-
-    return (
-      String(Math.floor(n / 60)).padStart(2,"0") +
-      ":" +
-      String(n % 60).padStart(2,"0")
-    );
-  }
-
-  // TIMER DURATION
-
-  function duration() {
-    const value =
-      live.stage === "running"
-        ? live.durationSec
-        : settings.durationSec ||
-          live.durationSec ||
-          120;
-
-    return Math.max(10,Number(value) || 120);
-  }
-
-  // LIVE REMAINING TIME
-
-  function remaining() {
-    if (live.stage !== "running") {
-      return duration();
-    }
-
-    if (!live.startedAt?.toMillis) {
-      return duration();
-    }
-
-    const finish =
-      live.startedAt.toMillis() +
-      duration() * 1000;
-
-    return Math.max(
-      0,
-      (finish - Date.now()) / 1000
-    );
-  }
-
-  // GAME STAGE
-
-  function currentStage() {
-    if (
-      live.stage === "running" &&
-      live.startedAt?.toMillis &&
-      remaining() <= 0
-    ) {
-      return "expired";
-    }
-
-    if (live.stage === "running") {
-      return "running";
-    }
-
-    // Older Word Portal stage names are
-    // treated as idle after the change.
-
-    return "idle";
-  }
-
-  // DISPLAY MESSAGES
-
-  function setMessage(text,bad=false) {
-    const el = $("actionMessage");
-
-    if (!el) return;
-
-    el.textContent = text;
-
-    el.style.color = bad
-      ? "#ff9bad"
-      : "#b9f1dc";
-
-    if (!isAdmin) {
-      clearTimeout(messageTimer);
-
-      messageTimer = setTimeout(() => {
-        if (el.textContent === text) {
-          el.textContent = "";
-        }
-      },5000);
-    }
-  }
-
-  // PREVENT DOUBLE CLICKS
-
-  async function perform(task) {
-    if (!authorized || busy) return;
-
-    busy = true;
-    render();
-
-    try {
-      await task();
-    } catch (err) {
-      console.error(err);
-
-      setMessage(
-        err.message ||
-        "Operation failed. Check Firebase permissions.",
-        true
-      );
-    } finally {
-      busy = false;
-      render();
-    }
-  }
-
-  // CURRENT SESSION COUNTER
-
-  function calcSession(field) {
-    const baselineKey =
-      "baseline" +
-      field.charAt(0).toUpperCase() +
-      field.slice(1);
-
-    const lifetime =
-      Number(stats[field] || 0);
-
-    const baseline =
-      Number(stats[baselineKey] || 0);
-
-    return Math.max(0,lifetime - baseline);
-  }
-
-  // LAST SESSION RESET TIME
-
-  function sessionStart() {
-    return (
-      stats.sessionResetAt?.toMillis?.() || 0
-    );
-  }
-
-  function inSession(record) {
-    const start = sessionStart();
-
-    return !start ||
-      (record.at?.toMillis?.() || 0) > start;
-  }
-
-  // DATE FORMAT
-
-  function dateText(timestamp) {
-    return timestamp?.toDate
-      ? timestamp.toDate().toLocaleString(
-          "en-US",
-          {
-            dateStyle:"medium",
-            timeStyle:"short"
-          }
-        )
-      : "Saving…";
-  }
-
-  // MAIN RENDER
-
-  function render() {
-    if (isAdmin) {
-      renderAdmin();
-    } else {
-      renderGame();
-    }
-  }
-
-  // VISITOR / ORGANIZER SCREEN
-
-  function renderGame() {
-    const left = remaining();
-    const stage = currentStage();
-
-    $("timeText").textContent =
-      seconds(left);
-
-    $("statusText").textContent =
-      stage === "running"
-        ? "GUESS NOW"
-        : stage === "expired"
-          ? "TIME IS UP"
-          : "READY";
-
-    $("roundLabel").textContent =
-      "ROUND " + (live.roundId || 0);
-
-    $("subtitle").textContent =
-      stage === "running"
-        ? "Feel the object and make your guess before time runs out!"
-        : stage === "expired"
-          ? "Time is up. Ask the organizer to record the result."
-          : "No looking! Reach inside the box and guess the mystery item.";
-
-    $("clock").classList.toggle(
-      "expired",
-      stage === "expired"
-    );
-
-    // CIRCULAR PROGRESS
-
-    const ring = $("progress");
-
-    const circumference =
-      2 * Math.PI * 109;
-
-    ring.style.strokeDasharray =
-      circumference;
-
-    ring.style.strokeDashoffset =
-      circumference *
-      (
-        1 -
-        Math.max(
-          0,
-          Math.min(1,left / duration())
-        )
-      );
-
-    // ORGANIZER BUTTONS
-
-    $("startBtn").disabled =
-      busy || stage !== "idle" || !authorized;
-
-    $("winBtn").disabled =
-      busy || stage !== "running" || !authorized;
-
-    $("failBtn").disabled =
-      busy ||
-      !["running","expired"].includes(stage) ||
-      !authorized;
-
-    $("resetRoundBtn").disabled =
-      busy || stage === "idle" || !authorized;
-
-    $("operatorControls").hidden =
-      !authorized;
-
-    $("access").hidden =
-      authorized;
-
-    $("signedIn").hidden =
-      !authorized;
-  }
-
-  // ADMIN DASHBOARD
-
-  function renderAdmin() {
-    if (!authorized) return;
-
-    [
-      "played",
-      "wins",
-      "losses",
-      "chocolates"
-    ].forEach(field => {
-      $(field).textContent =
-        calcSession(field).toLocaleString();
-    });
-
-    // CHOCOLATE STOCK
-    // Based on LIFETIME chocolates given.
-
-    const stockTotal = stats.stockTotal;
-
-    const tracked =
-      Number.isSafeInteger(stockTotal) &&
-      stockTotal >= 0;
-
-    $("stock").textContent = tracked
-      ? stockTotal.toLocaleString()
-      : "Not set";
-
-    $("remainingStock").textContent =
-      tracked
-        ? Math.max(
-            0,
-            stockTotal -
-            Number(stats.chocolates || 0)
-          ).toLocaleString()
-        : "Not set";
-
-    // TIMER
-
-    const stage = currentStage();
-
-    $("adminTimer").textContent =
-      seconds(remaining());
-
-    $("adminStage").textContent =
-      stage.toUpperCase();
-
-    $("startBtn").disabled =
-      busy || stage !== "idle";
-
-    $("winBtn").disabled =
-      busy || stage !== "running";
-
-    $("failBtn").disabled =
-      busy ||
-      !["running","expired"].includes(stage);
-
-    $("resetRoundBtn").disabled =
-      busy || stage === "idle";
-
-    document.querySelectorAll(
-      ".private-action"
-    ).forEach(button => {
-      button.disabled = busy;
-    });
-
-    if (
-      document.activeElement !==
-      $("durationInput")
-    ) {
-      $("durationInput").value =
-        seconds(Number(settings.durationSec || 120));
-    }
-  }
-
-  // DISPLAY ROUND HISTORY
-
-  function renderHistory() {
-    if (!isAdmin || !authorized) return;
-
-    const tbody = $("records");
-    tbody.replaceChildren();
-
-    const visible =
-      history.filter(inSession);
-
-    if (!visible.length) {
-      const row = tbody.insertRow();
-      const cell = row.insertCell();
-
-      cell.colSpan = 5;
-      cell.textContent =
-        "No rounds in the current session.";
-
-      return;
-    }
-
-    visible.forEach(record => {
-      const row = tbody.insertRow();
-
-      const item =
-        record.gameType === "guess-box"
-          ? "Mystery Item"
-          : record.word || "Earlier Ball Game";
-
-      const values = [
-        dateText(record.at),
-        item,
-        record.outcome === "won"
-          ? "WON"
-          : "FAILED",
-        record.chocolate || 0,
-        seconds(record.elapsedSec || 0)
-      ];
-
-      values.forEach(value => {
-        const cell = row.insertCell();
-        cell.textContent = String(value);
-      });
-    });
-  }
-
-  // START THE NEXT ROUND
-  // NO WORD RANDOMIZER
-
-  async function startRound() {
-    await db.runTransaction(async tx => {
-
-      const [liveSnap,settingsSnap] =
-        await Promise.all([
-          tx.get(liveRef),
-          tx.get(settingsRef)
-        ]);
-
-      const current =
-        liveSnap.data() || {};
-
-      if (current.stage === "running") {
-        throw Error(
-          "Finish or reset the active round first."
-        );
-      }
-
-      const durationSec =
-        Number(
-          settingsSnap.data()?.durationSec || 120
-        );
-
-      tx.set(liveRef,{
-        stage:"running",
-
-        roundId:
-          Number(current.roundId || 0) + 1,
-
-        durationSec:durationSec,
-
-        startedAt:
-          FV.serverTimestamp(),
-
-        word:"",
-        gameType:"guess-box"
-
-      },{merge:true});
-
-    });
-
-    setMessage("Timer started. Good luck!");
-  }
-
-  // FINISH ROUND
-  // WON = ONE CHOCOLATE
-  // FAILED = ZERO CHOCOLATES
-
-  async function finishRound(won) {
-
-    const recordRef =
-      historyRef.doc();
-
-    await db.runTransaction(async tx => {
-
-      const [liveSnap,statsSnap] =
-        await Promise.all([
-          tx.get(liveRef),
-          tx.get(statsRef)
-        ]);
-
-      const round =
-        liveSnap.data() || {};
-
-      if (
-        round.stage !== "running" ||
-        !round.startedAt?.toMillis
-      ) {
-        throw Error("No active round.");
-      }
-
-      const elapsed =
-        (
-          Date.now() -
-          round.startedAt.toMillis()
-        ) / 1000;
-
-      if (
-        won &&
-        elapsed >= Number(round.durationSec || 120)
-      ) {
-        throw Error(
-          "Time is up. Choose FAILED."
-        );
-      }
-
-      const currentStats =
-        statsSnap.data() || {};
-
-      // PREVENT EXCEEDING THIS GAME'S STOCK
-
-      if (
-        won &&
-        Number.isSafeInteger(currentStats.stockTotal) &&
-        Number(currentStats.chocolates || 0) >=
-          currentStats.stockTotal
-      ) {
-        throw Error(
-          "No chocolates left in this game stock. Update stock in Admin."
-        );
-      }
-
-      // SAVE HISTORY
-
-      tx.set(recordRef,{
-        gameType:"guess-box",
-        itemLabel:"Mystery Item",
-        word:"",
-        roundId:round.roundId,
-        outcome:won ? "won" : "lost",
-        chocolate:won ? 1 : 0,
-        durationSec:
-          Number(round.durationSec || 120),
-
-        elapsedSec:
-          Math.max(
-            0,
-            Math.min(
-              Number(round.durationSec || 120),
-              Math.round(elapsed)
-            )
-          ),
-
-        at:FV.serverTimestamp()
-      });
-
-      // KEEP EXISTING LIFETIME COUNTERS
-
-      tx.set(statsRef,{
-        played:FV.increment(1),
-        wins:FV.increment(won ? 1 : 0),
-        losses:FV.increment(won ? 0 : 1),
-        chocolates:FV.increment(won ? 1 : 0)
-      },{merge:true});
-
-      // RESET LIVE ROUND ONLY
-
-      tx.set(liveRef,{
-        stage:"idle",
-        startedAt:null,
-        word:""
-      },{merge:true});
-
-    });
-
-    setMessage(
-      won
-        ? "🍫 WON! One chocolate recorded."
-        : "FAILED — no chocolate recorded."
-    );
-  }
-
-  // CANCEL ROUND
-  // DOES NOT RECORD A RESULT
-
-  async function resetRound() {
-    if (!confirm(
-      "Cancel this round without counting a win or failure?"
-    )) {
-      return;
-    }
-
-    await db.runTransaction(async tx => {
-
-      const snapshot =
-        await tx.get(liveRef);
-
-      if (
-        !snapshot.exists ||
-        !["running","ready"].includes(
-          snapshot.data().stage
-        )
-      ) {
-        return;
-      }
-
-      tx.set(liveRef,{
-        stage:"idle",
-        startedAt:null,
-        word:""
-      },{merge:true});
-
-    });
-
-    setMessage(
-      "Current round cancelled. No chocolate counted."
-    );
-  }
-
-  // TIMER INPUT FORMAT
-
-  function parseDuration(value) {
-    const match =
-      /^(\d{1,2}):([0-5]\d)$/.exec(
-        value.trim()
-      );
-
-    if (!match) {
-      throw Error(
-        "Use MM:SS, for example 01:30 or 02:30."
-      );
-    }
-
-    const total =
-      Number(match[1]) * 60 +
-      Number(match[2]);
-
-    if (total < 10 || total > 900) {
-      throw Error(
-        "Choose between 00:10 and 15:00."
-      );
-    }
-
-    return total;
-  }
-
-  // SAVE TIMER DURATION
-
-  async function saveDuration() {
-    const secondsToSave =
-      parseDuration($("durationInput").value);
-
-    await settingsRef.set({
-      durationSec:secondsToSave
-    },{merge:true});
-
-    setMessage(
-      "Timer duration saved. Applies to the next round."
-    );
-  }
-
-  // SAVE CHOCOLATE STOCK
-
-  async function saveStock() {
-    const raw =
-      $("stockInput").value.trim();
-
-    const total = Number(raw);
-
-    if (
-      !raw ||
-      !Number.isSafeInteger(total) ||
-      total < 0
-    ) {
-      throw Error(
-        "Enter a whole number of chocolates."
-      );
-    }
-
-    await db.runTransaction(async tx => {
-
-      const snapshot =
-        await tx.get(statsRef);
-
-      const used =
-        Number(
-          snapshot.data()?.chocolates || 0
-        );
-
-      if (total < used) {
-        throw Error(
-          "Total stock cannot be less than chocolates already awarded (" +
-          used + ")."
-        );
-      }
-
-      tx.set(statsRef,{
-        stockTotal:total
-      },{merge:true});
-
-    });
-
-    $("stockInput").value = "";
-
-    setMessage(
-      "Chocolate stock saved. Existing chocolates remain counted."
-    );
-  }
-
-  // RESET SESSION
-  // KEEP ALL OLD RECORDS AND CHOCOLATES
-
-  async function resetSession() {
-    if (!hasStats || !hasHistory) {
-      throw Error(
-        "Wait for round history to finish loading."
-      );
-    }
-
-    if (!confirm(
-      "Start a new Guess the Item in the Box session?\n\n" +
-      "Displayed counters reset to zero, but " +
-      "ALL historical records and chocolates " +
-      "already awarded remain saved."
-    )) {
-      return;
-    }
-
-    await db.runTransaction(async tx => {
-
-      const [liveSnap,statsSnap] =
-        await Promise.all([
-          tx.get(liveRef),
-          tx.get(statsRef)
-        ]);
-
-      if (
-        liveSnap.data()?.stage === "running"
-      ) {
-        throw Error(
-          "Finish or cancel the active round first."
-        );
-      }
-
-      const current =
-        statsSnap.data() || {};
-
-      tx.set(statsRef,{
-
-        baselinePlayed:
-          Number(current.played || 0),
-
-        baselineWins:
-          Number(current.wins || 0),
-
-        baselineLosses:
-          Number(current.losses || 0),
-
-        baselineChocolates:
-          Number(current.chocolates || 0),
-
-        sessionResetAt:
-          FV.serverTimestamp()
-
-      },{merge:true});
-
-    });
-
-    setMessage(
-      "New session started. Earlier history and physical stock preserved."
-    );
-  }
-
-  // SAFE CSV CELL
-
-  function csvCell(value) {
-    let text = String(value ?? "");
-
-    if (/^\s*[=+@\-]/.test(text)) {
-      text = "'" + text;
-    }
-
-    return '"' +
-      text.replaceAll('"','""') +
-      '"';
-  }
-
-  // EXPORT CSV
-
-  async function downloadCSV(all) {
-
-    const snapshot =
-      await historyRef
-        .orderBy("at","desc")
-        .get();
-
-    const list =
-      snapshot.docs
-        .map(doc => doc.data())
-        .filter(record =>
-          all || inSession(record)
-        );
-
-    const rows = [[
-      "Date",
-      "Game",
-      "Item or earlier word",
-      "Round",
-      "Result",
-      "Chocolates",
-      "Time used (seconds)"
-    ]];
-
-    list.forEach(record => {
-
-      rows.push([
-        record.at?.toDate?.().toISOString() || "",
-
-        record.gameType === "guess-box"
-          ? "Guess the Item in the Box"
-          : "Earlier Ball Game",
-
-        record.gameType === "guess-box"
-          ? "Mystery Item"
-          : record.word || "",
-
-        record.roundId || "",
-        record.outcome || "",
-        record.chocolate || 0,
-        record.elapsedSec || 0
-      ]);
-
-    });
-
-    const csv = "\uFEFF" +
-      rows.map(row =>
-        row.map(csvCell).join(",")
-      ).join("\r\n");
-
-    const blob = new Blob(
-      [csv],
-      {
-        type:"text/csv;charset=utf-8"
-      }
-    );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const link =
-      document.createElement("a");
-
-    link.href = url;
-
-    link.download = all
-      ? "edex-box-all-history.csv"
-      : "edex-box-current-session.csv";
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(
-      () => URL.revokeObjectURL(url),
-      1000
-    );
-
-    setMessage("CSV exported.");
-  }
-
-  // STOP OLD DATABASE LISTENERS
-
-  function stopPrivate() {
-    unsubscribePrivate.forEach(
-      stop => stop()
-    );
-
-    unsubscribePrivate = [];
-  }
-
-  // WATCH FIREBASE DATA
-
-  function watchPrivate() {
-
-    unsubscribePrivate.push(
-      settingsRef.onSnapshot(
-        snapshot => {
-          settings = {
-            ...settings,
-            ...(snapshot.data() || {})
-          };
-
-          render();
-        },
-        err => {
-          setMessage(err.message,true);
-        }
-      )
-    );
-
-    if (isAdmin) {
-
-      unsubscribePrivate.push(
-        statsRef.onSnapshot(
-          snapshot => {
-            stats = snapshot.data() || {};
-            hasStats = true;
-
-            render();
-            renderHistory();
-          },
-          err => {
-            setMessage(err.message,true);
-          }
-        )
-      );
-
-      unsubscribePrivate.push(
-        historyRef
-          .orderBy("at","desc")
-          .limit(200)
-          .onSnapshot(
-            snapshot => {
-              history =
-                snapshot.docs.map(
-                  doc => doc.data()
-                );
-
-              hasHistory = true;
-
-              render();
-              renderHistory();
-            },
-            err => {
-              setMessage(err.message,true);
-            }
-          )
-      );
-
-    }
-  }
-
-  // ATTACH BUTTON ACTIONS
-
-  function bind(id,task) {
-    const element = $(id);
-
-    if (element) {
-      element.addEventListener(
-        "click",
-        () => perform(task)
-      );
-    }
-  }
-
-  bind("startBtn",startRound);
-
-  bind(
-    "winBtn",
-    () => finishRound(true)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDEX | Guess the Item in the Box Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  color-scheme:dark;
+  --gold:#f8d991;
+  --txt:#f9f5ff;
+  --muted:#bdb3d1;
+}
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  min-height:100vh;
+  color:var(--txt);
+  font-family:Outfit,Arial,sans-serif;
+  background:radial-gradient(
+    ellipse at 50% 0%,#50336e 0,
+    #1a1532 48%,#090a1c 100%
   );
+}
 
-  bind(
-    "failBtn",
-    () => finishRound(false)
-  );
+[hidden] { display:none!important; }
+button,input { font:inherit; }
+button { cursor:pointer; }
+button:disabled { opacity:.5;cursor:default; }
+a { text-decoration:none; }
 
-  bind("resetRoundBtn",resetRound);
+.wrap {
+  width:min(1160px,calc(100% - 30px));
+  margin:0 auto;
+  padding:20px 0 60px;
+}
 
-  if (isAdmin) {
+.brand {
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:.17em;
+  color:var(--gold);
+}
 
-    bind("saveDurationBtn",saveDuration);
+.brand small {
+  display:block;
+  color:#b5a7cb;
+  font-size:10px;
+  letter-spacing:.22em;
+}
 
-    bind("stockBtn",saveStock);
+/* THREE ADMIN TABS */
 
-    bind("resetSession",resetSession);
+.tabs {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:11px;
+  margin:25px 0 15px;
+}
 
-    bind(
-      "csv",
-      () => downloadCSV(false)
-    );
+.tabs a {
+  border:1px solid #8a6caa;
+  border-radius:13px;
+  min-height:52px;
+  background:#453256;
+  color:#f5eaff;
+  text-align:center;
+  padding:15px 8px;
+  font-weight:900;
+  font-size:13px;
+}
 
-    bind(
-      "csvAll",
-      () => downloadCSV(true)
-    );
+.tabs a.active {
+  background:linear-gradient(110deg,#ffe2a2,#edc16c);
+  color:#26190a;
+  border-color:#ffe2a2;
+}
+
+/* VISITOR PAGE LINK */
+
+.visitor {
+  display:block;
+  width:min(100%,500px);
+  margin:0 auto 25px;
+  background:linear-gradient(100deg,#ffe3a2,#edc16c);
+  border:1px solid #ffe2a2;
+  border-radius:13px;
+  text-align:center;
+  color:#271c0b;
+  font-weight:900;
+  padding:15px;
+}
+
+/* PANELS */
+
+.panel {
+  border:1px solid #5f5278;
+  border-radius:20px;
+  padding:22px;
+  background:#211d39ee;
+  margin:14px 0;
+  box-shadow:0 15px 38px #0003;
+}
+
+h1 {
+  font-size:clamp(32px,4.5vw,52px);
+  margin:10px 0;
+}
+
+h1 em {
+  font-style:normal;
+  color:var(--gold);
+}
+
+h2 { margin:0 0 12px;font-size:21px; }
+p { color:var(--muted);line-height:1.55; }
+
+.eyebrow {
+  color:#dcc2ff;
+  font-size:11px;
+  letter-spacing:.18em;
+  font-weight:900;
+}
+
+.row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.btn {
+  border:1px solid #705e89;
+  background:#493861;
+  color:#f8f2ff;
+  border-radius:11px;
+  min-height:44px;
+  padding:12px 16px;
+  font-weight:900;
+  font-size:13px;
+}
+
+.btn:hover:not(:disabled) {
+  filter:brightness(1.1);
+}
+
+.btn.gold {
+  background:var(--gold);
+  color:#271d10;
+  border-color:var(--gold);
+}
+
+.btn.red {
+  background:#6d334a;
+  color:#ffdeea;
+  border-color:#a45b73;
+}
+
+input {
+  padding:12px;
+  border:1px solid #746488;
+  border-radius:11px;
+  color:white;
+  background:#0e1026;
+  width:100%;
+}
+
+label {
+  display:block;
+  font-size:13px;
+  font-weight:800;
+  margin:13px 0 8px;
+  color:#dfd3f0;
+}
+
+.login {
+  max-width:470px;
+  margin:35px auto;
+}
+
+.login button {
+  width:100%;
+  margin-top:16px;
+}
+
+.error { color:#ff9cb1; }
+
+/* STATISTICS */
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+
+.stats .panel { min-height:130px; }
+
+.stats small {
+  color:#c4b2dc;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+}
+
+.stats strong {
+  font-size:44px;
+  display:block;
+  margin-top:9px;
+}
+
+/* CONTROL PANELS */
+
+.two {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+}
+
+.two .panel { margin:0; }
+
+.stock {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:15px 0;
+}
+
+.stock div {
+  border:1px solid #5c4c74;
+  padding:14px;
+  border-radius:13px;
+  background:#121228;
+}
+
+.stock small {
+  color:#b7a8c6;
+  font-weight:800;
+}
+
+.stock strong {
+  display:block;
+  font-size:32px;
+  margin-top:5px;
+  color:var(--gold);
+}
+
+.buttons {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.buttons button { flex:1; }
+
+.timer {
+  font-size:60px;
+  font-weight:900;
+  color:var(--gold);
+  letter-spacing:-.04em;
+  text-align:center;
+}
+
+.stage {
+  text-align:center;
+  color:#c8aadf;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.2em;
+}
+
+/* RECORDS */
+
+.tablewrap {
+  overflow:auto;
+  max-height:440px;
+  border:1px solid #655279;
+  border-radius:12px;
+  margin-top:14px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px;
+}
+
+th,td {
+  padding:12px;
+  text-align:left;
+  border-bottom:1px solid #413851;
+  font-size:13px;
+}
+
+th {
+  color:#ddc3f4;
+  background:#322947;
+  position:sticky;
+  top:0;
+}
+
+.notice {
+  font-size:13px;
+  color:#b9f1dc;
+  min-height:22px;
+}
+
+.note { font-size:12px; }
+.signout { margin-left:auto; }
+
+@media(max-width:850px) {
+  .stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
+  .two { grid-template-columns:1fr; }
+  .two .panel { margin:7px 0; }
+}
 
-  // ORGANIZER LOGIN
+@media(max-width:550px) {
+  .tabs { gap:5px; }
+  .tabs a { font-size:11px;padding:11px 4px; }
+  .panel { padding:16px; }
+  .buttons button { flex:1 1 100%; }
+}
+</style>
+</head>
 
-  $("loginForm").addEventListener(
-    "submit",
-    async event => {
+<body>
+<div class="wrap">
 
-      event.preventDefault();
+  <header class="brand">
+    ✦ EDEX
+    <small>GUESS THE ITEM IN THE BOX · ADMIN</small>
+  </header>
 
-      $("loginError").textContent = "";
+  <!-- THREE ADMIN NAVIGATION TABS -->
 
-      try {
+  <nav class="tabs" aria-label="EDEX Admin navigation">
 
-        const credential =
-          await auth.signInWithEmailAndPassword(
-            $("email").value.trim(),
-            $("password").value
-          );
+    <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
+      ✦ Quiz Admin
+    </a>
 
-        if (
-          credential.user.uid !== ADMIN_UID
-        ) {
-          await auth.signOut();
+    <a class="active"
+       aria-current="page"
+       href="admin.html">
+      📦 Guess the Item in the Box
+    </a>
 
-          throw Error(
-            "This is not the organizer account."
-          );
-        }
+    <a href="https://freshlook10-alt.github.io/edex-timer-challenge/admin.html">
+      ⏱ Timer Admin
+    </a>
 
-        $("password").value = "";
+  </nav>
 
-      } catch (err) {
+  <!-- OPENS VISITOR / ORGANIZER IN NEW TAB -->
 
-        $("loginError").textContent =
-          err.message || "Login failed.";
+  <a class="visitor"
+     href="index.html"
+     target="_blank"
+     rel="noopener noreferrer">
+    ↗ OPEN BOX GAME VISITOR / ORGANIZER
+  </a>
 
-      }
-    }
-  );
+  <!-- LOGIN -->
 
-  // SIGN OUT
+  <section id="adminLogin" class="panel login">
 
-  const signout =
-    $("signout") || $("signOutBtn");
+    <div class="eyebrow">✦ AUTHORIZED ORGANIZER</div>
+    <h1>Box Game <em>Admin.</em></h1>
 
-  if (signout) {
-    signout.onclick = () => {
-      if (!busy) {
-        auth.signOut();
-      }
-    };
-  }
+    <p>
+      Sign in to manage rounds, inventory
+      and saved records.
+    </p>
 
-  // AUTHENTICATION CHANGES
+    <form id="loginForm">
 
-  auth.onAuthStateChanged(async user => {
+      <label for="email">Email</label>
+      <input id="email"
+             type="email"
+             autocomplete="username"
+             required>
 
-    authorized =
-      Boolean(user) &&
-      user.uid === ADMIN_UID;
+      <label for="password">Password</label>
+      <input id="password"
+             type="password"
+             autocomplete="current-password"
+             required>
 
-    stopPrivate();
+      <button class="btn gold" type="submit">
+        Open Admin
+      </button>
 
-    if (user && !authorized) {
-      await auth.signOut();
-      return;
-    }
+      <p id="loginError"
+         class="error"
+         role="alert"></p>
 
-    if (authorized) {
-      watchPrivate();
-    }
+    </form>
+  </section>
 
-    if (isAdmin) {
+  <!-- MAIN ADMIN DASHBOARD -->
 
-      $("adminLogin").hidden =
-        authorized;
+  <section id="adminContent" hidden>
 
-      $("adminContent").hidden =
-        !authorized;
+    <div class="row">
 
-    } else {
+      <div>
+        <div class="eyebrow">
+          ✦ LIVE CHALLENGE MANAGEMENT
+        </div>
 
-      $("operatorControls").hidden =
-        !authorized;
+        <h1>Event <em>Overview.</em></h1>
 
-      $("access").hidden =
-        authorized;
+        <p>
+          Session counters reset without deleting
+          past rounds or replacing chocolates.
+        </p>
+      </div>
 
-      $("signedIn").hidden =
-        !authorized;
-    }
+      <button class="btn signout"
+              id="signout"
+              type="button">
+        Sign Out
+      </button>
 
-    render();
-  });
+    </div>
 
-  // LIVE TIMER STATE
+    <!-- GAME COUNTERS -->
 
-  liveRef.onSnapshot(
-    snapshot => {
+    <div class="stats">
 
-      live = {
-        ...live,
-        ...(snapshot.data() || {})
-      };
+      <div class="panel">
+        <small>ROUNDS PLAYED</small>
+        <strong id="played">0</strong>
+      </div>
 
-      if ($("connection")) {
-        $("connection").textContent =
-          "● LIVE";
-      }
+      <div class="panel">
+        <small>WON</small>
+        <strong id="wins">0</strong>
+      </div>
 
-      render();
-    },
-    err => {
+      <div class="panel">
+        <small>FAILED</small>
+        <strong id="losses">0</strong>
+      </div>
 
-      if ($("connection")) {
-        $("connection").textContent =
-          "● OFFLINE";
-      }
+      <div class="panel">
+        <small>CHOCOLATES THIS SESSION 🍫</small>
+        <strong id="chocolates">0</strong>
+      </div>
 
-      setMessage(err.message,true);
-    }
-  );
+    </div>
 
-  // UPDATE TIMER DISPLAY
+    <div class="two">
 
-  setInterval(render,200);
+      <!-- TIMER -->
 
-  render();
+      <section class="panel">
 
-})();
+        <div class="eyebrow">01 / LIVE TIMER</div>
+
+        <div class="timer" id="adminTimer">
+          02:00
+        </div>
+
+        <div class="stage" id="adminStage">
+          IDLE
+        </div>
+
+        <div class="buttons" style="margin:18px 0">
+
+          <button class="btn gold"
+                  id="startBtn"
+                  type="button">
+            ▶ START TIMER
+          </button>
+
+          <button class="btn gold"
+                  id="winBtn"
+                  type="button">
+            🍫 WON +1
+          </button>
+
+          <button class="btn"
+                  id="failBtn"
+                  type="button">
+            ✕ FAILED
+          </button>
+
+        </div>
+
+        <button class="btn"
+                id="resetRoundBtn"
+                type="button">
+          ↺ Cancel Current Round
+        </button>
+
+        <label for="durationInput">
+          Time for next round (MM:SS)
+        </label>
+
+        <input id="durationInput"
+               value="02:00"
+               maxlength="5"
+               placeholder="01:30">
+
+        <button class="btn private-action"
+                id="saveDurationBtn"
+                type="button"
+                style="margin-top:10px">
+          Save Timer
+        </button>
+
+        <p class="note">
+          Examples: 01:30, 02:00, 02:30.
+          No randomizer or Arabic word list.
+        </p>
+
+      </section>
+
+      <!-- CHOCOLATE STOCK -->
+
+      <section class="panel">
+
+        <div class="eyebrow">
+          02 / CHOCOLATE INVENTORY
+        </div>
+
+        <h2>Chocolate Stock</h2>
+
+        <div class="stock">
+
+          <div>
+            <small>TOTAL</small>
+            <strong id="stock">—</strong>
+          </div>
+
+          <div>
+            <small>REMAINING</small>
+            <strong id="remainingStock">—</strong>
+          </div>
+
+        </div>
+
+        <label for="stockInput">
+          Set total chocolates for this game
+        </label>
+
+        <input id="stockInput"
+               type="number"
+               min="0"
+               step="1"
+               placeholder="Example: 100">
+
+        <button class="btn gold private-action"
+                id="stockBtn"
+                type="button"
+                style="margin-top:10px">
+          Save Stock
+        </button>
+
+        <p class="note">
+          Chocolates already distributed stay deducted
+          when starting a new session. This stock is
+          still for this game, not yet shared across
+          Quiz and Timer.
+        </p>
+
+      </section>
+
+    </div>
+
+    <!-- ROUND HISTORY AND RESET -->
+
+    <section class="panel">
+
+      <div class="row">
+
+        <div>
+          <div class="eyebrow">03 / HISTORY</div>
+          <h2>Played Rounds</h2>
+        </div>
+
+        <div class="buttons">
+
+          <button class="btn private-action"
+                  id="csv"
+                  type="button">
+            ↓ Session CSV
+          </button>
+
+          <button class="btn private-action"
+                  id="csvAll"
+                  type="button">
+            ↓ All History CSV
+          </button>
+
+          <button class="btn red private-action"
+                  id="resetSession"
+                  type="button">
+            ↺ Reset Session
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="tablewrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>DATE</th>
+              <th>GAME / ITEM</th>
+              <th>RESULT</th>
+              <th>CHOCOLATE</th>
+              <th>TIME USED</th>
+            </tr>
+          </thead>
+
+          <tbody id="records">
+            <tr>
+              <td colspan="5">
+                Loading history…
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <p class="note">
+        Reset Session starts the displayed counts
+        at zero. Older records remain in Firebase
+        and All History CSV. Chocolates are not refunded.
+      </p>
+
+      <p class="notice"
+         id="actionMessage"
+         role="status"></p>
+
+    </section>
+
+  </section>
+</div>
+
+<!-- EXISTING FIREBASE LIBRARIES -->
+
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
+<!-- KEEP YOUR ORIGINAL FIREBASE CONFIG -->
+
+<script src="firebase-config.js"></script>
+
+<!-- NEW APP.JS FROM STEP 3 -->
+
+<script src="app.js"></script>
+
+</body>
+</html>
