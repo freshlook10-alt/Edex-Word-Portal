@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EDEX | Memory Shuffle</title>
+
+<style>
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(
+    ellipse at top,
+    #593974,
+    #18132e 55%,
+    #080c20
+  );
+  color:#f8f4ff;
+  font-family:system-ui,Arial,sans-serif;
+  text-align:center;
+}
+
+a {
+  color:#ffe09b;
+}
+
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px;
+  max-width:1000px;
+  margin:auto;
+}
+
+header b {
+  color:#ffe0a0;
+  letter-spacing:3px;
+  font-size:24px;
+}
+
+#connection {
+  color:#9af0cb;
+  font-size:12px;
+}
+
+main {
+  max-width:850px;
+  margin:auto;
+  padding:20px 16px 40px;
+}
+
+.eyebrow {
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:3px;
+  color:#ffe09b;
+}
+
+h1 {
+  font-size:clamp(38px,7vw,70px);
+  line-height:1.04;
+  margin:16px 0;
+}
+
+h1 em {
+  font-style:normal;
+  color:#ffe09b;
+}
+
+p {
+  color:#bbb1d2;
+  line-height:1.6;
+}
+
+/* BOTTLE DECORATION */
+
+.bottles {
+  display:flex;
+  justify-content:center;
+  gap:22px;
+  margin:35px auto;
+}
+
+.bottle {
+  width:100px;
+  height:140px;
+  border:1px solid #7c6498;
+  border-radius:25px;
+  background:#2d2248;
+  display:grid;
+  place-items:center;
+  font-size:60px;
+  box-shadow:0 15px 35px #05051280;
+}
+
+.bottle:nth-child(2) {
+  transform:translateY(-10px);
+}
+
+/* RESULT DISPLAY */
+
+.result {
+  padding:24px 10px;
+  border-radius:18px;
+  border:1px solid #776290;
+  background:#18172cd9;
+  min-height:85px;
+  font-size:clamp(19px,3vw,32px);
+  font-weight:900;
+  color:#d1b9fc;
+}
+
+.won-result {
+  color:#ffe09b!important;
+  border-color:#e3b760!important;
+}
+
+.lost-result {
+  color:#ff9eaf!important;
+  border-color:#a04e6a!important;
+}
+
+/* ORGANIZER PANEL */
+
+.panel {
+  margin:25px auto;
+  max-width:560px;
+  padding:22px;
+  background:#211b3b;
+  border:1px solid #765f91;
+  border-radius:18px;
+  text-align:left;
+}
+
+label {
+  display:block;
+  margin:12px 0 5px;
+  font-size:13px;
+  font-weight:700;
+}
+
+input {
+  width:100%;
+  padding:13px;
+  background:#0a0d20;
+  color:white;
+  border:1px solid #776995;
+  border-radius:10px;
+  font:inherit;
+}
+
+.buttons {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.btn {
+  padding:17px 12px;
+  border:0;
+  border-radius:12px;
+  font:900 15px system-ui;
+  cursor:pointer;
+}
+
+.btn:disabled {
+  opacity:.5;
+}
+
+.win {
+  background:#ffdc91;
+  color:#261809;
+}
+
+.lose {
+  background:#64384f;
+  color:#ffe8ee;
+  border:1px solid #a36078;
+}
+
+#logoutBtn {
+  background:#383149;
+  color:#fff;
+  border:1px solid #6b5e88;
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+#notice {
+  font-size:13px;
+  min-height:24px;
+  color:#aaf2cf;
+}
+
+.error {
+  color:#ff9cae;
+}
+
+footer {
+  color:#8c82a5;
+  font-size:11px;
+  letter-spacing:2px;
+  margin:30px;
+}
+
+small {
+  color:#a99abf;
+}
+
+[hidden] {
+  display:none!important;
+}
+
+@media(max-width:500px) {
+  .bottles {
+    gap:9px;
+  }
+  .bottle {
+    width:85px;
+    height:110px;
+    font-size:46px;
+  }
+  .buttons {
+    grid-template-columns:1fr;
+  }
+}
+</style>
+</head>
+
+<body data-page="visitor">
+
+<header>
+  <b>✦ EDEX</b>
+  <span id="connection">
+    ● CONNECTING
+  </span>
+</header>
+
+<main>
+
+  <p class="eyebrow">
+    ✦ LOOK CLOSELY · REMEMBER · GUESS ✦
+  </p>
+
+  <h1>
+    <em>Memory</em> Shuffle
+  </h1>
+
+  <p>
+    Watch the bottles being shuffled.
+    Remember the hidden item and guess
+    where it is!
+  </p>
+
+  <div class="bottles" aria-hidden="true">
+    <div class="bottle">🧴</div>
+    <div class="bottle">🧴</div>
+    <div class="bottle">🧴</div>
+  </div>
+
+  <!-- PUBLIC RESULT -->
+
+  <div class="result" id="resultPanel">
+    <div id="lastResult">
+      WATCH • REMEMBER • GUESS
+    </div>
+  </div>
+
+  <p>
+    Each correct guess wins one chocolate 🍫
+  </p>
+
+  <p>
+    Rounds recorded:
+    <b id="roundNumber">0</b>
+  </p>
+
+  <p id="notice" role="status"></p>
+
+  <!-- ORGANIZER LOGIN -->
+
+  <section class="panel" id="loginPanel">
+
+    <h2>Organizer Access</h2>
+
+    <form id="loginForm">
+
+      <label for="email">
+        Email
+      </label>
+
+      <input id="email"
+             type="email"
+             autocomplete="username"
+             required>
+
+      <label for="password">
+        Password
+      </label>
+
+      <input id="password"
+             type="password"
+             autocomplete="current-password"
+             required>
+
+      <button class="btn win"
+              type="submit"
+              style="width:100%;margin-top:14px">
+        Unlock Controls
+      </button>
+
+    </form>
+
+    <p class="error" id="loginError"></p>
+
+  </section>
+
+  <!-- ORGANIZER CONTROLS -->
+
+  <section class="panel"
+           id="privatePanel"
+           hidden>
+
+    <h2>Organizer Controls</h2>
+
+    <p>
+      After each real-world bottle shuffle,
+      record the result:
+    </p>
+
+    <div class="buttons">
+
+      <button id="wonBtn"
+              type="button"
+              class="btn win">
+        🍫 WON
+      </button>
+
+      <button id="lostBtn"
+              type="button"
+              class="btn lose">
+        ✕ NOT WON
+      </button>
+
+    </div>
+
+    <p>
+      WON = 1 chocolate.
+      NOT WON = no chocolate.
+    </p>
+
+    <a href="memory-admin.html"
+       target="_blank"
+       rel="noopener">
+      Open Memory Shuffle Admin ↗
+    </a>
+
+    <div style="margin-top:15px">
+      <button type="button" id="logoutBtn">
+        Log Out
+      </button>
+    </div>
+
+  </section>
+
+</main>
+
+<footer>
+  EDEX EXPERIENCE ✦ MEMORY SHUFFLE
+</footer>
+
+<!-- EXISTING FIREBASE -->
+
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
+<script src="firebase-config.js"></script>
+<script src="memory-app.js"></script>
+
+</body>
+</html>
