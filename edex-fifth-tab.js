@@ -1,81 +1,100 @@
 
 /*
- EDEX FIFTH GAME NAVIGATION
+ EDEX FIVE GAME NAVIGATION
 
- Adds Hit the Box as the fifth tab
- to the existing four Admin pages.
+ Correct filenames:
+ hitbox.html
+ hitbox-admin.html
+ hitbox.js
 
- Does not change Firebase, visitor
- records, timers or chocolate counters.
+ Navigation file:
+ edex fifth tab.js
 */
 
 (() => {
   "use strict";
 
-  const HIT_BOX_ADMIN =
-    "https://freshlook10-alt.github.io/Edex-Word-Portal/hit-box-admin.html";
+  const HITBOX_URL =
+    "https://freshlook10-alt.github.io/Edex-Word-Portal/hitbox-admin.html";
 
-  function addFifthTab() {
+  function setupNavigation() {
+
     const nav = document.querySelector(
       "nav.edex-tabs, nav.tabs"
     );
 
     if (!nav) return;
 
-    const alreadyExists = Array.from(
+    const links = Array.from(
       nav.querySelectorAll("a")
-    ).some(link =>
-      link.href.includes("/hit-box-admin.html")
     );
 
-    if (!alreadyExists) {
-      const link = document.createElement("a");
+    let hitbox = links.find(link => {
+      const url = link.getAttribute("href") || "";
+      const label = link.textContent || "";
 
-      link.href = HIT_BOX_ADMIN;
-      link.textContent = "🎯 Hit the Box";
+      return (
+        /hit-?box-admin\.html/i.test(url) ||
+        /hit the box/i.test(label)
+      );
+    });
 
-      if (
-        window.location.pathname.endsWith(
-          "/hit-box-admin.html"
-        )
-      ) {
-        link.classList.add("active");
-        link.setAttribute("aria-current","page");
-      }
+    // Create the fifth tab if missing.
 
-      nav.appendChild(link);
+    if (!hitbox) {
+      hitbox = document.createElement("a");
+      nav.appendChild(hitbox);
     }
 
-    if (!document.getElementById("edex-five-tab-style")) {
+    // Fix the incorrect link.
+
+    hitbox.href = HITBOX_URL;
+    hitbox.textContent = "🎯 Hit the Box";
+
+    // Highlight Hit the Box when selected.
+
+    if (
+      window.location.pathname.endsWith(
+        "/hitbox-admin.html"
+      )
+    ) {
+      nav.querySelectorAll("a").forEach(link => {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
+      });
+
+      hitbox.classList.add("active");
+      hitbox.setAttribute("aria-current", "page");
+    }
+
+    // Arrange five tabs neatly.
+
+    if (!document.getElementById("edex-nav-style")) {
       const style = document.createElement("style");
 
-      style.id = "edex-five-tab-style";
+      style.id = "edex-nav-style";
 
       style.textContent = `
-        @media (min-width:961px) {
-          nav.edex-tabs,
-          nav.tabs {
-            display:grid !important;
-            grid-template-columns:
-              repeat(5,minmax(0,1fr)) !important;
-            gap:9px !important;
-          }
-
-          nav.edex-tabs a,
-          nav.tabs a {
-            min-width:0;
-            text-align:center;
-            overflow-wrap:anywhere;
-          }
+        nav.edex-tabs,
+        nav.tabs {
+          display: grid !important;
+          grid-template-columns:
+            repeat(5, minmax(0, 1fr)) !important;
+          gap: 9px !important;
         }
 
-        @media (max-width:960px) {
+        nav.edex-tabs a,
+        nav.tabs a {
+          min-width: 0;
+          text-align: center;
+          overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 850px) {
           nav.edex-tabs,
           nav.tabs {
-            display:grid !important;
             grid-template-columns:
-              repeat(2,minmax(0,1fr)) !important;
-            gap:8px !important;
+              repeat(2, minmax(0, 1fr)) !important;
           }
         }
       `;
@@ -87,10 +106,11 @@
   if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
-      addFifthTab,
-      {once:true}
+      setupNavigation,
+      { once: true }
     );
   } else {
-    addFifthTab();
+    setupNavigation();
   }
+
 })();
