@@ -4,141 +4,379 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>EDEX | Hit the Box Admin</title>
+
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;min-height:100vh;color:#f8f4ff;
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  min-height:100vh;
+  color:#f8f4ff;
   font-family:Arial,sans-serif;
-  background:radial-gradient(ellipse at top,#493167,#18132c 60%,#090b1c)
+  background:radial-gradient(
+    ellipse at top,
+    #493167,
+    #18132c 60%,
+    #090b1c
+  );
 }
-[hidden]{display:none!important}
-.wrap{max-width:1180px;margin:auto;padding:24px 16px 60px}
-.logo{font-size:26px;font-weight:900;color:#ffdf99;letter-spacing:3px}
-.logo small{display:block;font-size:10px;color:#b7a8cf;letter-spacing:2px}
-h1{font-size:clamp(32px,5vw,52px);margin:15px 0}
-h1 em{font-style:normal;color:#ffdb93}
-h2{margin:0 0 14px}
-p{color:#bdb1d1;line-height:1.55}
-.eyebrow{font-size:11px;font-weight:900;letter-spacing:2px;color:#ffdb93}
-.tabs{
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:9px;margin:22px 0 15px
+
+[hidden] {
+  display:none!important;
 }
-.tabs a{
-  display:grid;place-items:center;padding:12px 7px;
-  min-height:55px;text-align:center;
-  border:1px solid #8a6daa;border-radius:12px;
-  background:#48345c;color:white;text-decoration:none;
-  font-size:12px;font-weight:900
+
+.wrap {
+  max-width:1180px;
+  margin:auto;
+  padding:24px 16px 60px;
 }
-.tabs .active{background:#ffdc96;color:#261908;border-color:#ffdc96}
-.visitor{
-  display:block;max-width:500px;margin:0 auto 25px;
-  background:#ffdc96;color:#27190a;
-  border-radius:13px;padding:15px;
-  font-weight:900;text-decoration:none;text-align:center
+
+.logo {
+  font-size:26px;
+  font-weight:900;
+  color:#ffdf99;
+  letter-spacing:3px;
 }
-.card{
-  background:#221c37;border:1px solid #66547e;
-  border-radius:18px;padding:21px;margin:15px 0;
-  box-shadow:0 13px 35px #05051140
+
+.logo small {
+  display:block;
+  font-size:10px;
+  color:#b7a8cf;
+  letter-spacing:2px;
 }
-.login{max-width:450px;margin:35px auto}
-label{
-  display:block;margin:13px 0 6px;
-  color:#e8d8f2;font-size:13px;font-weight:800
+
+h1 {
+  font-size:clamp(32px,5vw,52px);
+  margin:15px 0;
 }
-input,textarea,select{
-  display:block;width:100%;padding:12px;
-  color:white;background:#100e27;
-  border:1px solid #75648c;border-radius:10px;
-  font:inherit
+
+h1 em {
+  font-style:normal;
+  color:#ffdb93;
 }
-textarea{resize:vertical;min-height:110px}
-button{
-  font:800 13px Arial;cursor:pointer;border:0;
-  padding:13px 15px;border-radius:11px;
-  background:#5c4678;color:white
+
+h2 {
+  margin:0 0 14px;
 }
-button:disabled{opacity:.45;cursor:default}
-.gold{background:#ffda92;color:#2c1c0a}
-.red{background:#76374c;color:#ffe7ec;border:1px solid #ad6078}
-.row{
-  display:flex;justify-content:space-between;
-  align-items:center;gap:12px;flex-wrap:wrap
+
+p {
+  color:#bdb1d1;
+  line-height:1.55;
 }
-.actions{display:flex;gap:9px;flex-wrap:wrap}
-.actions button{flex:1}
-.stats{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:12px;margin:15px 0
+
+.eyebrow {
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+  color:#ffdb93;
 }
-.stats .card{margin:0;min-height:125px}
-.stats small{font-size:11px;color:#bdb3cb;font-weight:900}
-.stats strong{
-  display:block;font-size:42px;
-  margin-top:12px;color:#ffe0a0
+
+/* FIVE ADMIN TABS */
+
+.tabs {
+  display:grid;
+  grid-template-columns:repeat(
+    5,minmax(0,1fr)
+  );
+  gap:9px;
+  margin:22px 0 15px;
 }
-.two{display:grid;grid-template-columns:1fr 1fr;gap:15px}
-.two .card{margin:0}
-.clock{
-  text-align:center;font-size:67px;
-  font-weight:900;color:#ffe09e;
-  font-variant-numeric:tabular-nums
+
+.tabs a {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 7px;
+  min-height:55px;
+  text-align:center;
+  border:1px solid #8a6daa;
+  border-radius:12px;
+  background:#48345c;
+  color:white;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:900;
 }
-.word{
-  text-align:center;font-size:64px;
-  font-weight:900;color:#e3c9ff;min-height:85px
+
+.tabs a:hover {
+  background:#674e81;
 }
-.stage{
-  text-align:center;color:#d7bafd;
-  font-size:12px;font-weight:900;letter-spacing:2px
+
+.tabs a.active {
+  background:linear-gradient(
+    110deg,#ffe3a2,#eebf6a
+  );
+  color:#261908;
+  border-color:#ffdc96;
 }
-.note{font-size:12px;color:#b9aacb}
-.msg{font-size:13px;min-height:22px;color:#a7f0cd}
-.inventory{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.inventory div{
-  padding:14px;background:#14132c;
-  border:1px solid #635276;border-radius:12px
+
+.visitor {
+  display:block;
+  max-width:500px;
+  margin:0 auto 25px;
+  background:#ffdc96;
+  color:#27190a;
+  border-radius:13px;
+  padding:15px;
+  font-weight:900;
+  text-decoration:none;
+  text-align:center;
 }
-.inventory small{font-size:11px;color:#b8acce}
-.inventory strong{
-  display:block;color:#ffda92;font-size:30px;margin-top:8px
+
+/* PANELS */
+
+.card {
+  background:#221c37;
+  border:1px solid #66547e;
+  border-radius:18px;
+  padding:21px;
+  margin:15px 0;
+  box-shadow:0 13px 35px #05051140;
 }
-.table-wrap{
-  border:1px solid #5c4d70;border-radius:12px;
-  overflow:auto;max-height:400px
+
+.login {
+  max-width:450px;
+  margin:35px auto;
 }
-table{width:100%;min-width:720px;border-collapse:collapse}
-td,th{
-  padding:12px;border-bottom:1px solid #41364e;
-  text-align:left;font-size:13px
+
+label {
+  display:block;
+  margin:13px 0 6px;
+  color:#e8d8f2;
+  font-size:13px;
+  font-weight:800;
 }
-th{background:#352848;color:#e8d1ff;position:sticky;top:0}
-@media(max-width:850px){
-  .tabs{grid-template-columns:repeat(2,1fr)}
-  .two{grid-template-columns:1fr}
-  .stats{grid-template-columns:repeat(2,1fr)}
+
+input,textarea,select {
+  display:block;
+  width:100%;
+  padding:12px;
+  color:white;
+  background:#100e27;
+  border:1px solid #75648c;
+  border-radius:10px;
+  font:inherit;
 }
-@media(max-width:500px){
-  .card{padding:16px}
-  .actions button{flex:1 1 100%}
+
+textarea {
+  resize:vertical;
+  min-height:110px;
+}
+
+button {
+  font:800 13px Arial,sans-serif;
+  cursor:pointer;
+  border:0;
+  padding:13px 15px;
+  border-radius:11px;
+  background:#5c4678;
+  color:white;
+}
+
+button:disabled {
+  opacity:.45;
+  cursor:default;
+}
+
+.gold {
+  background:#ffda92;
+  color:#2c1c0a;
+}
+
+.red {
+  background:#76374c;
+  color:#ffe7ec;
+  border:1px solid #ad6078;
+}
+
+.row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.actions {
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+}
+
+.actions button {
+  flex:1;
+}
+
+.stats {
+  display:grid;
+  grid-template-columns:repeat(
+    4,minmax(0,1fr)
+  );
+  gap:12px;
+  margin:15px 0;
+}
+
+.stats .card {
+  margin:0;
+  min-height:125px;
+}
+
+.stats small {
+  font-size:11px;
+  color:#bdb3cb;
+  font-weight:900;
+}
+
+.stats strong {
+  display:block;
+  font-size:42px;
+  margin-top:12px;
+  color:#ffe0a0;
+}
+
+.two {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+}
+
+.two .card {
+  margin:0;
+}
+
+.clock {
+  text-align:center;
+  font-size:67px;
+  font-weight:900;
+  color:#ffe09e;
+  font-variant-numeric:tabular-nums;
+}
+
+.word {
+  text-align:center;
+  font-size:64px;
+  font-weight:900;
+  color:#e3c9ff;
+  min-height:85px;
+}
+
+.stage {
+  text-align:center;
+  color:#d7bafd;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.note {
+  font-size:12px;
+  color:#b9aacb;
+}
+
+.msg {
+  font-size:13px;
+  min-height:22px;
+  color:#a7f0cd;
+}
+
+.inventory {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.inventory div {
+  padding:14px;
+  background:#14132c;
+  border:1px solid #635276;
+  border-radius:12px;
+}
+
+.inventory small {
+  font-size:11px;
+  color:#b8acce;
+}
+
+.inventory strong {
+  display:block;
+  color:#ffda92;
+  font-size:30px;
+  margin-top:8px;
+}
+
+.table-wrap {
+  border:1px solid #5c4d70;
+  border-radius:12px;
+  overflow:auto;
+  max-height:400px;
+}
+
+table {
+  width:100%;
+  min-width:720px;
+  border-collapse:collapse;
+}
+
+td,th {
+  padding:12px;
+  border-bottom:1px solid #41364e;
+  text-align:left;
+  font-size:13px;
+}
+
+th {
+  background:#352848;
+  color:#e8d1ff;
+  position:sticky;
+  top:0;
+}
+
+@media(max-width:850px) {
+  .tabs {
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .two {
+    grid-template-columns:1fr;
+  }
+
+  .stats {
+    grid-template-columns:repeat(2,1fr);
+  }
+}
+
+@media(max-width:500px) {
+  .card {
+    padding:16px;
+  }
+
+  .actions button {
+    flex:1 1 100%;
+  }
 }
 </style>
 </head>
 
 <body data-hit-page="admin">
+
 <div class="wrap">
 
   <div class="logo">
     ✦ EDEX
-    <small>HIT THE BOX · CONTROL CENTER</small>
+    <small>
+      HIT THE BOX · CONTROL CENTER
+    </small>
   </div>
 
-  <!-- ALL FIVE GAMES, LAST ONE ACTIVE -->
+  <!-- ALL FIVE GAMES -->
 
-  <nav class="tabs" aria-label="EDEX Admin navigation">
+  <nav class="tabs"
+       aria-label="EDEX Admin navigation">
+
     <a href="https://freshlook10-alt.github.io/arabic-choclate-quiz/admin.html">
       ✦ Quiz Admin
     </a>
@@ -155,35 +393,64 @@ th{background:#352848;color:#e8d1ff;position:sticky;top:0}
       🧠 Memory Shuffle
     </a>
 
-    <a class="active" aria-current="page" href="hit-box-admin.html">
+    <a class="active"
+       aria-current="page"
+       href="hitbox-admin.html">
       🎯 Hit the Box
     </a>
+
   </nav>
 
-  <a class="visitor" href="hit-box.html"
-     target="_blank" rel="noopener">
+  <!-- CORRECT VISITOR LINK -->
+
+  <a class="visitor"
+     href="hitbox.html"
+     target="_blank"
+     rel="noopener noreferrer">
+
     ↗ OPEN HIT THE BOX VISITOR / ORGANIZER
+
   </a>
 
   <!-- LOGIN -->
 
-  <section id="hitLogin" class="card login">
+  <section id="hitLogin"
+           class="card login">
+
     <h2>🔐 Organizer Login</h2>
+
     <form id="hitLoginForm">
-      <label for="hitEmail">Email</label>
-      <input id="hitEmail" type="email"
-             autocomplete="username" required>
 
-      <label for="hitPassword">Password</label>
-      <input id="hitPassword" type="password"
-             autocomplete="current-password" required>
+      <label for="hitEmail">
+        Email
+      </label>
 
-      <button class="gold" type="submit"
+      <input id="hitEmail"
+             type="email"
+             autocomplete="username"
+             required>
+
+      <label for="hitPassword">
+        Password
+      </label>
+
+      <input id="hitPassword"
+             type="password"
+             autocomplete="current-password"
+             required>
+
+      <button class="gold"
+              type="submit"
               style="width:100%;margin-top:14px">
+
         Open Hit the Box Admin
+
       </button>
+
     </form>
+
     <p id="hitLoginError" class="msg"></p>
+
   </section>
 
   <!-- ADMIN DASHBOARD -->
@@ -191,176 +458,305 @@ th{background:#352848;color:#e8d1ff;position:sticky;top:0}
   <section id="hitAdmin" hidden>
 
     <div class="row">
+
       <div>
-        <div class="eyebrow">LIVE GAME MANAGEMENT</div>
+        <div class="eyebrow">
+          LIVE GAME MANAGEMENT
+        </div>
+
         <h1>Hit the <em>Box.</em></h1>
-        <p>Randomize Arabic words, run rounds and record chocolates.</p>
+
+        <p>
+          Randomize Arabic words, run rounds
+          and record chocolates.
+        </p>
       </div>
-      <button id="hitLogout" type="button">Sign Out</button>
+
+      <button id="hitLogout"
+              type="button">
+        Sign Out
+      </button>
+
     </div>
 
+    <!-- STATISTICS -->
+
     <div class="stats">
+
       <div class="card">
         <small>ROUNDS PLAYED</small>
         <strong id="hbPlayed">0</strong>
       </div>
+
       <div class="card">
         <small>WON</small>
         <strong id="hbWins">0</strong>
       </div>
+
       <div class="card">
         <small>NOT WON</small>
         <strong id="hbLosses">0</strong>
       </div>
+
       <div class="card">
-        <small>CHOCOLATES THIS SESSION 🍫</small>
+        <small>
+          CHOCOLATES THIS SESSION 🍫
+        </small>
         <strong id="hbChocolates">0</strong>
       </div>
+
     </div>
+
+    <!-- GAME CONTROL AND SETTINGS -->
 
     <div class="two">
 
-      <!-- GAME CONTROL -->
-
       <section class="card">
-        <div class="eyebrow">01 / LIVE RANDOMIZER</div>
 
-        <div id="hitWord" class="word" dir="rtl">✦</div>
-        <div id="hitClock" class="clock">01:30</div>
-        <div id="hitStage" class="stage">IDLE</div>
-        <p id="hitRoundNumber">Round 0</p>
-        <p id="hitResult" class="note">Randomize a word to begin.</p>
+        <div class="eyebrow">
+          01 / LIVE RANDOMIZER
+        </div>
+
+        <div id="hitWord"
+             class="word"
+             dir="rtl">
+          ✦
+        </div>
+
+        <div id="hitClock"
+             class="clock">
+          01:30
+        </div>
+
+        <div id="hitStage"
+             class="stage">
+          IDLE
+        </div>
+
+        <p id="hitRoundNumber">
+          Round 0
+        </p>
+
+        <p id="hitResult" class="note">
+          Randomize a word to begin.
+        </p>
 
         <div class="actions">
-          <button id="hitRandomBtn" class="gold" type="button">
+
+          <button id="hitRandomBtn"
+                  class="gold"
+                  type="button">
             🎲 NEW WORD
           </button>
-          <button id="hitStartBtn" class="gold" type="button">
+
+          <button id="hitStartBtn"
+                  class="gold"
+                  type="button">
             ▶ START TIMER
           </button>
+
         </div>
 
-        <div class="actions" style="margin-top:10px">
-          <button id="hitWonBtn" class="gold" type="button">
+        <div class="actions"
+             style="margin-top:10px">
+
+          <button id="hitWonBtn"
+                  class="gold"
+                  type="button">
             🍫 WON +1
           </button>
-          <button id="hitFailedBtn" class="red" type="button">
+
+          <button id="hitFailedBtn"
+                  class="red"
+                  type="button">
             ✕ NOT WON
           </button>
-          <button id="hitCancelBtn" type="button">
+
+          <button id="hitCancelBtn"
+                  type="button">
             ↺ CANCEL
           </button>
+
         </div>
-        <p id="hitMessage" class="msg" role="status"></p>
+
+        <p id="hitMessage"
+           class="msg"
+           role="status"></p>
+
       </section>
 
-      <!-- RANDOMIZER SETTINGS -->
+      <!-- WORD SETTINGS -->
 
       <section class="card">
-        <div class="eyebrow">02 / WORD SETTINGS</div>
+
+        <div class="eyebrow">
+          02 / WORD SETTINGS
+        </div>
+
         <h2>Randomizer Configuration</h2>
 
         <label for="hbDurationInput">
           Time for each round (MM:SS)
         </label>
-        <input id="hbDurationInput" type="text"
-               value="01:30" placeholder="00:20">
 
-        <button id="hbSaveTime" class="gold"
-                type="button" style="margin-top:10px">
+        <input id="hbDurationInput"
+               type="text"
+               value="01:30"
+               placeholder="00:20">
+
+        <button id="hbSaveTime"
+                class="gold"
+                type="button"
+                style="margin-top:10px">
           Save Timer
         </button>
 
         <p class="note">
-          00:20 = 20 seconds, 01:30 = 90 seconds,
+          00:20 = 20 seconds.
+          01:30 = 90 seconds.
           02:30 = 150 seconds.
         </p>
 
-        <label for="hbMode">Randomizer Mode</label>
+        <label for="hbMode">
+          Randomizer Mode
+        </label>
+
         <select id="hbMode">
-          <option value="words">Approved Arabic Words</option>
-          <option value="all">All 125 Combinations</option>
+          <option value="words">
+            Approved Arabic Words
+          </option>
+
+          <option value="all">
+            All 125 Combinations
+          </option>
         </select>
 
         <label for="hbWordsInput">
           Approved Arabic Word Bank
         </label>
-        <textarea id="hbWordsInput" dir="rtl"
+
+        <textarea id="hbWordsInput"
+                  dir="rtl"
                   spellcheck="false"></textarea>
 
-        <div class="actions" style="margin-top:10px">
-          <button id="hbSaveWords" class="gold" type="button">
+        <div class="actions"
+             style="margin-top:10px">
+
+          <button id="hbSaveWords"
+                  class="gold"
+                  type="button">
             Save Word Bank
           </button>
-          <button id="hbResetCycle" type="button">
+
+          <button id="hbResetCycle"
+                  type="button">
             Reset Used Words
           </button>
+
         </div>
 
         <p class="note">
-          Five letters: ا ب ت ث ج.
-          Each challenge has exactly three letters.
-          The All Combinations mode may generate
-          letter combinations that are not real words.
+          Letters: ا ب ت ث ج.
+          Each challenge has three letters.
+          All Combinations can include non-words.
         </p>
+
       </section>
+
     </div>
 
+    <!-- CHOCOLATE INVENTORY -->
+
     <section class="card">
-      <div class="eyebrow">03 / CHOCOLATE INVENTORY</div>
+
+      <div class="eyebrow">
+        03 / CHOCOLATE INVENTORY
+      </div>
+
       <h2>Hit the Box Chocolate Stock</h2>
 
       <div class="inventory">
+
         <div>
           <small>TOTAL</small>
-          <strong id="hbStock">Not set</strong>
+          <strong id="hbStock">
+            Not set
+          </strong>
         </div>
+
         <div>
           <small>REMAINING</small>
-          <strong id="hbRemaining">Not set</strong>
+          <strong id="hbRemaining">
+            Not set
+          </strong>
         </div>
+
       </div>
 
-      <label for="hbStockInput">Set total chocolates</label>
-      <input id="hbStockInput" type="number"
-             min="0" step="1" placeholder="Example: 100">
+      <label for="hbStockInput">
+        Set total chocolates
+      </label>
 
-      <button id="hbSaveStock" class="gold"
-              type="button" style="margin-top:10px">
+      <input id="hbStockInput"
+             type="number"
+             min="0"
+             step="1"
+             placeholder="Example: 100">
+
+      <button id="hbSaveStock"
+              class="gold"
+              type="button"
+              style="margin-top:10px">
         Save Stock
       </button>
 
       <p class="note">
-        This is separate tracking for Hit the Box.
-        One shared chocolate stock for all five games
-        has not yet been implemented.
+        This stock is tracked separately
+        from your other EDEX games.
       </p>
+
     </section>
 
-    <!-- HISTORY AND RESET -->
+    <!-- HISTORY -->
 
     <section class="card">
+
       <div class="row">
+
         <div>
-          <div class="eyebrow">04 / RECORDS</div>
+          <div class="eyebrow">
+            04 / RECORDS
+          </div>
+
           <h2>Hit the Box History</h2>
         </div>
 
         <div class="actions">
-          <button id="hbSessionCsv" type="button">
+
+          <button id="hbSessionCsv"
+                  type="button">
             ↓ Session CSV
           </button>
-          <button id="hbAllCsv" type="button">
+
+          <button id="hbAllCsv"
+                  type="button">
             ↓ All History CSV
           </button>
-          <button id="hbResetSession" class="red" type="button">
+
+          <button id="hbResetSession"
+                  class="red"
+                  type="button">
             ↺ Reset Session
           </button>
+
         </div>
+
       </div>
 
       <div class="table-wrap">
+
         <table>
+
           <thead>
             <tr>
               <th>DATE & TIME</th>
@@ -370,25 +766,44 @@ th{background:#352848;color:#e8d1ff;position:sticky;top:0}
               <th>TIME USED</th>
             </tr>
           </thead>
+
           <tbody id="hbRecords">
-            <tr><td colspan="5">Loading results…</td></tr>
+            <tr>
+              <td colspan="5">
+                Loading results…
+              </td>
+            </tr>
           </tbody>
+
         </table>
+
       </div>
 
       <p class="note">
-        Reset Session starts the displayed statistics at zero.
-        Old records and previous chocolates stay saved.
+        Reset Session restarts the displayed
+        statistics at zero. Old records and
+        awarded chocolates remain saved.
       </p>
+
     </section>
 
   </section>
+
 </div>
+
+<!-- FIREBASE LIBRARIES -->
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
+<!-- EXISTING FIREBASE CONFIG -->
+
 <script src="firebase-config.js"></script>
-<script src="hit-box.js"></script>
+
+<!-- CORRECT JAVASCRIPT FILENAME -->
+
+<script src="hitbox.js"></script>
+
 </body>
 </html>
