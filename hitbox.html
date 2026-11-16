@@ -4,183 +4,481 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
 <title>EDEX | Hit the Box</title>
+
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;min-height:100vh;color:#faf5ff;
-  font-family:Arial,sans-serif;text-align:center;
-  background:radial-gradient(ellipse at top,#563a79,#19132f 65%,#0b0b1c)
+* {
+  box-sizing:border-box;
 }
-[hidden]{display:none!important}
-header{
-  display:flex;justify-content:space-between;align-items:center;
-  max-width:1000px;margin:auto;padding:20px
+
+body {
+  margin:0;
+  min-height:100vh;
+  color:#faf5ff;
+  font-family:Arial,sans-serif;
+  text-align:center;
+  background:radial-gradient(
+    ellipse at top,
+    #563a79,
+    #19132f 65%,
+    #0b0b1c
+  );
 }
-.logo{font-size:26px;font-weight:900;color:#ffda91;letter-spacing:3px}
-.logo small{display:block;font-size:10px;color:#bfb1d4;letter-spacing:2px}
-#connection{color:#9eebc1;font-size:12px}
-main{max-width:850px;margin:auto;padding:15px 18px 45px}
-.eyebrow{font-size:12px;letter-spacing:3px;color:#fbd794;font-weight:900}
-h1{font-size:clamp(42px,7vw,72px);margin:15px 0}
-h1 em{font-style:normal;color:#ffdb91}
-p{color:#c8bdd8;line-height:1.6}
-.targets{display:flex;justify-content:center;gap:10px;margin:30px auto}
-.target{
-  width:69px;height:83px;display:grid;place-items:center;
-  border:2px solid #af8e67;border-radius:14px;
-  background:linear-gradient(#534072,#2a2447);
+
+[hidden] {
+  display:none!important;
+}
+
+header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  max-width:1000px;
+  margin:auto;
+  padding:20px;
+}
+
+.logo {
+  font-size:26px;
+  font-weight:900;
+  color:#ffda91;
+  letter-spacing:3px;
+}
+
+.logo small {
+  display:block;
+  font-size:10px;
+  color:#bfb1d4;
+  letter-spacing:2px;
+}
+
+#connection {
+  color:#9eebc1;
+  font-size:12px;
+}
+
+main {
+  max-width:850px;
+  margin:auto;
+  padding:15px 18px 45px;
+}
+
+.eyebrow {
+  font-size:12px;
+  letter-spacing:3px;
+  color:#fbd794;
+  font-weight:900;
+}
+
+h1 {
+  font-size:clamp(42px,7vw,72px);
+  margin:15px 0;
+}
+
+h1 em {
+  font-style:normal;
+  color:#ffdb91;
+}
+
+p {
+  color:#c8bdd8;
+  line-height:1.6;
+}
+
+/* FIVE LETTER TARGETS */
+
+.targets {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin:30px auto;
+}
+
+.target {
+  width:69px;
+  height:83px;
+  display:grid;
+  place-items:center;
+  border:2px solid #af8e67;
+  border-radius:14px;
+  background:linear-gradient(
+    #534072,
+    #2a2447
+  );
   box-shadow:0 10px 23px #08051177;
-  color:#ffe2a4;font-weight:900;font-size:35px
+  color:#ffe2a4;
+  font-weight:900;
+  font-size:35px;
 }
-.word-card{
-  margin:20px auto;max-width:550px;padding:23px;
-  border:1px solid #a186bb;border-radius:22px;
-  background:linear-gradient(145deg,#35264e,#16172d)
+
+/* RANDOM WORD DISPLAY */
+
+.word-card {
+  margin:20px auto;
+  max-width:550px;
+  padding:23px;
+  border:1px solid #a186bb;
+  border-radius:22px;
+  background:linear-gradient(
+    145deg,
+    #35264e,
+    #16172d
+  );
 }
-.word-label{font-size:12px;letter-spacing:3px;color:#d0b2ed;font-weight:800}
-.word{
+
+.word-label {
+  font-size:12px;
+  letter-spacing:3px;
+  color:#d0b2ed;
+  font-weight:800;
+}
+
+.word {
   font-size:clamp(70px,13vw,110px);
-  font-weight:900;color:#ffe3a5;min-height:125px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:Arial,sans-serif;letter-spacing:9px
+  font-weight:900;
+  color:#ffe3a5;
+  min-height:125px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:Arial,sans-serif;
+  letter-spacing:9px;
 }
-.clock{
+
+/* TIMER */
+
+.clock {
   font-size:clamp(60px,11vw,95px);
-  font-weight:900;color:#fbe0a1;
-  margin:12px 0;font-variant-numeric:tabular-nums
+  font-weight:900;
+  color:#fbe0a1;
+  margin:12px 0;
+  font-variant-numeric:tabular-nums;
 }
-.status{color:#d3b5ff;font-size:13px;letter-spacing:3px;font-weight:900}
-.panel{
-  background:#211c37;border:1px solid #765e90;
-  border-radius:20px;max-width:570px;
-  margin:23px auto;padding:22px;text-align:left
+
+.status {
+  color:#d3b5ff;
+  font-size:13px;
+  letter-spacing:3px;
+  font-weight:900;
 }
-h2{margin:0 0 14px}
-input{
-  width:100%;padding:13px;margin:6px 0 13px;
-  border:1px solid #75648e;border-radius:10px;
-  background:#0e0d23;color:white;font:inherit
+
+/* ORGANIZER PANEL */
+
+.panel {
+  background:#211c37;
+  border:1px solid #765e90;
+  border-radius:20px;
+  max-width:570px;
+  margin:23px auto;
+  padding:22px;
+  text-align:left;
 }
-label{font-size:13px;font-weight:800}
-button{
-  border:0;border-radius:12px;padding:14px 15px;
-  font:800 14px Arial;cursor:pointer
+
+h2 {
+  margin:0 0 14px;
 }
-button:disabled{opacity:.45;cursor:default}
-.gold{background:#ffdc96;color:#2a1c0a}
-.dark{background:#4b3a61;color:white}
-.danger{background:#744057;color:#ffe5ed}
-.grid{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:10px;margin:10px 0
+
+input {
+  width:100%;
+  padding:13px;
+  margin:6px 0 13px;
+  border:1px solid #75648e;
+  border-radius:10px;
+  background:#0e0d23;
+  color:white;
+  font:inherit;
 }
-.grid button{width:100%}
-.full{width:100%;margin-top:10px}
-.msg{min-height:22px;color:#aaf1c9;font-size:13px}
-a{color:#ffe1a0}
-footer{color:#a395b6;font-size:11px;letter-spacing:2px;padding:22px}
-@media(max-width:520px){
-  .target{width:53px;height:69px;font-size:27px}
-  .targets{gap:6px}
-  .grid{grid-template-columns:1fr}
-  .panel{padding:16px}
+
+label {
+  font-size:13px;
+  font-weight:800;
+}
+
+button {
+  border:0;
+  border-radius:12px;
+  padding:14px 15px;
+  font:800 14px Arial,sans-serif;
+  cursor:pointer;
+}
+
+button:disabled {
+  opacity:.45;
+  cursor:default;
+}
+
+.gold {
+  background:#ffdc96;
+  color:#2a1c0a;
+}
+
+.dark {
+  background:#4b3a61;
+  color:white;
+}
+
+.danger {
+  background:#744057;
+  color:#ffe5ed;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:10px 0;
+}
+
+.grid button {
+  width:100%;
+}
+
+.full {
+  width:100%;
+  margin-top:10px;
+}
+
+.msg {
+  min-height:22px;
+  color:#aaf1c9;
+  font-size:13px;
+}
+
+a {
+  color:#ffe1a0;
+}
+
+footer {
+  color:#a395b6;
+  font-size:11px;
+  letter-spacing:2px;
+  padding:22px;
+}
+
+@media(max-width:520px) {
+  .target {
+    width:53px;
+    height:69px;
+    font-size:27px;
+  }
+
+  .targets {
+    gap:6px;
+  }
+
+  .grid {
+    grid-template-columns:1fr;
+  }
+
+  .panel {
+    padding:16px;
+  }
 }
 </style>
 </head>
+
 <body data-hit-page="visitor">
 
 <header>
+
   <div class="logo">
     ✦ EDEX
-    <small>HIT THE BOX · ARABIC CHALLENGE</small>
+    <small>
+      HIT THE BOX · ARABIC CHALLENGE
+    </small>
   </div>
-  <span id="connection">● CONNECTING</span>
+
+  <span id="connection">
+    ● CONNECTING
+  </span>
+
 </header>
 
 <main>
-  <div class="eyebrow">✦ RANDOMIZE · AIM · HIT ✦</div>
-  <h1>Hit the <em>Box</em></h1>
-  <p>Hit the correct Arabic letter boxes to complete the word before time runs out.</p>
 
-  <div class="targets" aria-label="Five Arabic letters" dir="rtl">
+  <div class="eyebrow">
+    ✦ RANDOMIZE · AIM · HIT ✦
+  </div>
+
+  <h1>
+    Hit the <em>Box</em>
+  </h1>
+
+  <p>
+    Hit the correct Arabic letter boxes
+    to complete the word before time runs out.
+  </p>
+
+  <!-- FIVE ARABIC LETTERS -->
+
+  <div class="targets"
+       aria-label="Five Arabic letters"
+       dir="rtl">
+
     <div class="target">ا</div>
     <div class="target">ب</div>
     <div class="target">ت</div>
     <div class="target">ث</div>
     <div class="target">ج</div>
+
   </div>
 
+  <!-- LIVE WORD AND TIMER -->
+
   <section class="word-card">
-    <div class="word-label">YOUR RANDOM WORD</div>
-    <div class="word" id="hitWord" dir="rtl">✦</div>
-    <div class="status" id="hitStage">READY FOR A CHALLENGE</div>
-    <div class="clock" id="hitClock">01:30</div>
-    <p id="hitResult">Wait for the organizer to randomize a word.</p>
+
+    <div class="word-label">
+      YOUR RANDOM WORD
+    </div>
+
+    <div class="word"
+         id="hitWord"
+         dir="rtl">
+      ✦
+    </div>
+
+    <div class="status"
+         id="hitStage">
+      READY FOR A CHALLENGE
+    </div>
+
+    <div class="clock"
+         id="hitClock">
+      01:30
+    </div>
+
+    <p id="hitResult">
+      Wait for the organizer
+      to randomize a word.
+    </p>
+
   </section>
 
-  <p class="msg" id="hitMessage" role="status"></p>
+  <p class="msg"
+     id="hitMessage"
+     role="status"></p>
 
-  <section class="panel" id="hitLogin">
+  <!-- ORGANIZER LOGIN -->
+
+  <section class="panel"
+           id="hitLogin">
+
     <h2>🔐 Organizer Access</h2>
+
     <form id="hitLoginForm">
-      <label for="hitEmail">Email</label>
-      <input id="hitEmail" type="email" autocomplete="username" required>
 
-      <label for="hitPassword">Password</label>
-      <input id="hitPassword" type="password"
-             autocomplete="current-password" required>
+      <label for="hitEmail">
+        Email
+      </label>
 
-      <button class="gold full" type="submit">
+      <input id="hitEmail"
+             type="email"
+             autocomplete="username"
+             required>
+
+      <label for="hitPassword">
+        Password
+      </label>
+
+      <input id="hitPassword"
+             type="password"
+             autocomplete="current-password"
+             required>
+
+      <button class="gold full"
+              type="submit">
         Unlock Organizer Controls
       </button>
+
     </form>
-    <p id="hitLoginError" class="msg"></p>
+
+    <p id="hitLoginError"
+       class="msg"></p>
+
   </section>
 
-  <section class="panel" id="hitControls" hidden>
-    <h2>Organizer Controls</h2>
-    <p id="hitRoundNumber">Round 0</p>
+  <!-- ORGANIZER CONTROLS -->
 
-    <button id="hitRandomBtn" class="gold full" type="button">
+  <section class="panel"
+           id="hitControls"
+           hidden>
+
+    <h2>Organizer Controls</h2>
+
+    <p id="hitRoundNumber">
+      Round 0
+    </p>
+
+    <button id="hitRandomBtn"
+            class="gold full"
+            type="button">
       🎲 RANDOMIZE NEXT WORD
     </button>
 
-    <button id="hitStartBtn" class="gold full" type="button">
+    <button id="hitStartBtn"
+            class="gold full"
+            type="button">
       ▶ START TIMER
     </button>
 
     <div class="grid">
-      <button id="hitWonBtn" class="gold" type="button">
+
+      <button id="hitWonBtn"
+              class="gold"
+              type="button">
         🍫 WON +1
       </button>
-      <button id="hitFailedBtn" class="danger" type="button">
+
+      <button id="hitFailedBtn"
+              class="danger"
+              type="button">
         ✕ NOT WON
       </button>
+
     </div>
 
-    <button id="hitCancelBtn" class="dark full" type="button">
+    <button id="hitCancelBtn"
+            class="dark full"
+            type="button">
       ↺ Cancel Current Round
     </button>
 
     <p>
-      <a href="hit-box-admin.html" target="_blank" rel="noopener">
+      <a href="hitbox-admin.html"
+         target="_blank"
+         rel="noopener noreferrer">
         Open Hit the Box Admin ↗
       </a>
     </p>
 
-    <button id="hitLogout" class="dark" type="button">
+    <button id="hitLogout"
+            class="dark"
+            type="button">
       Sign Out
     </button>
+
   </section>
+
 </main>
 
-<footer>EDEX EXPERIENCE ✦ HIT THE BOX</footer>
+<footer>
+  EDEX EXPERIENCE ✦ HIT THE BOX
+</footer>
+
+<!-- FIREBASE LIBRARIES -->
 
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore-compat.js"></script>
+
+<!-- EXISTING FIREBASE CONFIG -->
+
 <script src="firebase-config.js"></script>
-<script src="hit-box.js"></script>
+
+<!-- CORRECT JAVASCRIPT FILENAME -->
+
+<script src="hitbox.js"></script>
+
 </body>
 </html>
