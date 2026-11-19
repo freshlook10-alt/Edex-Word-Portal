@@ -1,45 +1,51 @@
 
 /*
- EDEX HIT THE BOX — COMPLETE JAVASCRIPT
+ EDEX — HIT THE BOX
+ Complete replacement for hitbox.js
 
- Original Arabic word randomizer restored.
+ Letters: ا ب ت ث
+ Letter ج completely removed.
 
- 5 letters: ا ب ت ث ج
- 3-letter challenge
- Real words or all 125 combinations
- Live timer and prize results
+ All combinations: 4 x 4 x 4 = 64
 
- Uses existing:
- firebase-config.js
- wordPortal/live
- wordSettings/main
- wordStats/total
- wordHistory
-
- All new game settings and stats use
- the hb prefix so the Box Game is not reset.
+ Keeps Firebase records, chocolate counts,
+ timer, organizer login and session reset.
 */
 
 (() => {
   "use strict";
 
   const $ = id => document.getElementById(id);
-  const isAdmin = document.body.dataset.hitPage === "admin";
+
+  const adminPage =
+    document.body.dataset.hitPage === "admin";
+
   const FV = firebase.firestore.FieldValue;
 
-  const liveRef = db.collection("wordPortal").doc("live");
-  const settingsRef = db.collection("wordSettings").doc("main");
-  const statsRef = db.collection("wordStats").doc("total");
-  const historyRef = db.collection("wordHistory");
+  const liveRef =
+    db.collection("wordPortal").doc("live");
 
-  const LETTERS = ["ا","ب","ت","ث","ج"];
-  const WORD_RE = /^[ابتثج]{3}$/u;
+  const settingsRef =
+    db.collection("wordSettings").doc("main");
+
+  const statsRef =
+    db.collection("wordStats").doc("total");
+
+  const historyRef =
+    db.collection("wordHistory");
+
+  // ONLY THE FOUR AVAILABLE LETTERS
+
+  const LETTERS = ["ا", "ب", "ت", "ث"];
+
+  const WORD_RE = /^[ابتث]{3}$/u;
 
   const DEFAULT_WORDS = [
-    "باب","بات","تاب","تاج","جاب",
-    "ثاب","جثا","ثبت","بثت","تبت",
-    "جبت","جثث","تجب","تبث","تثب"
+    "باب", "بات", "تاب", "ثاب",
+    "ثبت", "تبت", "بثت", "بتت"
   ];
+
+  const GAME = "hit-box";
 
   let authorized = false;
   let busy = false;
@@ -52,70 +58,161 @@
 
   let live = {};
   let stats = {};
-  let records = [];
+  let history = [];
 
   let settings = {
-    hbDurationSec:90,
-    hbMode:"words",
-    hbWords:DEFAULT_WORDS
+    hbDurationSec: 90,
+    hbMode: "words",
+    hbWords: DEFAULT_WORDS
   };
 
-  let unsubPrivate = [];
+  let privateListeners = [];
 
-  // TIME FORMAT
+  // REMOVE UNAVAILABLE WORDS FROM OLD BANK
 
-  function formatTime(value) {
-    const n = Math.max(0,Math.ceil(Number(value) || 0));
+  function validSavedWords(list) {
+    if (!Array.isArray(list)) {
+      return [...DEFAULT_WORDS];
+    }
+
+    const allowed = [
+      ...new Set(
+        list.map(x =>
+          String(x).normalize("NFC").trim()
+        )
+      )
+    ].filter(x => WORD_RE.test(x));
+
+    return allowed.length
+      ? allowed
+      : [...DEFAULT_WORDS];
+  }
+
+  // AUTOMATICALLY REMOVE ج FROM THE
+  // EXISTING VISITOR AND ADMIN PAGES
+
+  function removeJeemFromScreen() {
+
+    document.querySelectorAll(
+      ".targets .target"
+    ).forEach(el => {
+
+      if (el.textContent.trim() === "ج") {
+        el.remove();
+      }
+
+    });
+
+    document.querySelectorAll(
+      "option, .note, .word-label, p"
+    ).forEach(el => {
+
+      for (const node of el.childNodes) {
+
+        if (node.nodeType !== Node.TEXT_NODE) {
+          continue;
+        }
+
+        node.textContent = node.textContent
+          .replace(
+            /All 125 Combinations/gi,
+            "All 64 Combinations"
+          )
+          .replace(
+            /Five letters/gi,
+            "Four letters"
+          )
+          .replace(
+            /5 letters/gi,
+            "4 letters"
+          )
+          .replace(
+            /ا\s*ب\s*ت\s*ث\s*ج/g,
+            "ا ب ت ث"
+          );
+      }
+
+    });
+  }
+
+  // FORMAT TIMER AS MM:SS
+
+  function formatTime(s) {
+
+    const n = Math.max(
+      0,
+      Math.ceil(Number(s) || 0)
+    );
 
     return (
-      String(Math.floor(n / 60)).padStart(2,"0") +
+      String(Math.floor(n / 60))
+        .padStart(2, "0") +
       ":" +
-      String(n % 60).padStart(2,"0")
+      String(n % 60).padStart(2, "0")
     );
   }
 
-  // SUPPORT 00:20, 01:30 OR PLAIN 20
+  // ACCEPT 00:20 OR 20
 
-  function parseTime(raw) {
-    const value = String(raw).trim();
-    let seconds;
+  function parseTime(value) {
 
-    if (/^\d{1,2}:[0-5]\d$/.test(value)) {
-      const [m,s] = value.split(":").map(Number);
-      seconds = m * 60 + s;
-    } else if (/^\d{1,3}$/.test(value)) {
-      seconds = Number(value);
+    const raw = String(value).trim();
+
+    let n;
+
+    if (/^\d{1,2}:[0-5]\d$/.test(raw)) {
+
+      const [m, s] =
+        raw.split(":").map(Number);
+
+      n = m * 60 + s;
+
+    } else if (/^\d{1,3}$/.test(raw)) {
+
+      n = Number(raw);
+
     } else {
+
       throw Error(
-        "Enter 00:20, 01:30, 02:30 or a number of seconds."
+        "Type 00:20 for 20 seconds, " +
+        "or 01:30 for 90 seconds."
       );
     }
 
     if (
-      !Number.isSafeInteger(seconds) ||
-      seconds < 10 ||
-      seconds > 900
+      !Number.isSafeInteger(n) ||
+      n < 10 ||
+      n > 900
     ) {
-      throw Error("Timer must be from 00:10 to 15:00.");
+      throw Error(
+        "Time must be between 00:10 and 15:00."
+      );
     }
 
-    return seconds;
+    return n;
   }
 
+  const millis = value =>
+    value?.toMillis?.() || 0;
+
   function duration() {
+
     const n = Number(
-      live.hbDurationSec ||
-      settings.hbDurationSec ||
-      90
+      live.hbStage === "running"
+        ? live.hbDurationSec
+        : settings.hbDurationSec
     );
 
-    return Number.isFinite(n) && n >= 10 ? n : 90;
+    return Number.isFinite(n) && n >= 10
+      ? n
+      : 90;
   }
 
   function timeLeft() {
+
     if (
       live.hbStage !== "running" ||
-      !live.hbStartedAt?.toMillis
+      !millis(live.hbStartedAt)
     ) {
       return duration();
     }
@@ -123,7 +220,7 @@
     return Math.max(
       0,
       (
-        live.hbStartedAt.toMillis() +
+        millis(live.hbStartedAt) +
         duration() * 1000 -
         Date.now()
       ) / 1000
@@ -131,58 +228,104 @@
   }
 
   function stage() {
-    if (
-      live.hbStage === "running" &&
-      live.hbStartedAt?.toMillis &&
-      timeLeft() <= 0
-    ) {
-      return "expired";
+
+    if (live.hbStage === "running") {
+
+      return (
+        millis(live.hbStartedAt) &&
+        timeLeft() <= 0
+      )
+        ? "expired"
+        : "running";
     }
 
     return live.hbStage || "idle";
   }
 
-  function millis(value) {
-    return value?.toMillis?.() || 0;
+  // DISPLAY FEEDBACK
+
+  function message(text, error = false) {
+
+    const el = $("hitMessage");
+
+    if (!el) return;
+
+    el.textContent = text;
+
+    el.style.color = error
+      ? "#ff9eaf"
+      : "#aaf0cd";
   }
 
-  function message(text,bad=false) {
-    const target = $("hitMessage");
-    if (!target) return;
-
-    target.textContent = text;
-    target.style.color = bad ? "#ff9bad" : "#aaf1c9";
-  }
+  // PREVENT DOUBLE CLICKS
 
   async function perform(work) {
+
     if (!authorized || busy) return;
 
     busy = true;
-    render();
 
     try {
       await work();
-    } catch (err) {
-      console.error(err);
+
+    } catch (e) {
+
+      console.error(e);
+
       message(
-        err?.message || "Unable to save. Check Firebase permissions.",
+        e?.message ||
+        "Could not save. Check Firebase permissions.",
         true
       );
+
     } finally {
+
       busy = false;
       render();
     }
   }
 
-  // CREATE ALL 125 LETTER COMBINATIONS
+  // VALIDATE APPROVED WORDS
+
+  function parseNewWords(raw) {
+
+    const words = [
+      ...new Set(
+        String(raw)
+          .normalize("NFC")
+          .split(/[\s,،؛;]+/u)
+          .map(x => x.trim())
+          .filter(Boolean)
+      )
+    ];
+
+    if (!words.length) {
+      throw Error("Enter at least one word.");
+    }
+
+    if (
+      words.some(x => !WORD_RE.test(x))
+    ) {
+      throw Error(
+        "Use only three-letter words " +
+        "made from ا ب ت ث. " +
+        "Letter ج is not allowed."
+      );
+    }
+
+    return words;
+  }
+
+  // GENERATE ALL 64 COMBINATIONS
 
   function allCombinations() {
+
     const result = [];
 
     for (const a of LETTERS) {
       for (const b of LETTERS) {
         for (const c of LETTERS) {
-          result.push(a+b+c);
+          result.push(a + b + c);
         }
       }
     }
@@ -190,284 +333,383 @@
     return result;
   }
 
-  function validWords(input) {
-    const words = [...new Set(
-      String(input)
-        .normalize("NFC")
-        .split(/[\s,،؛;]+/u)
-        .map(x => x.trim())
-        .filter(Boolean)
-    )];
+  function poolFrom(saved) {
 
-    if (!words.length) {
-      throw Error("The word bank cannot be empty.");
-    }
-
-    if (words.some(w => !WORD_RE.test(w))) {
-      throw Error(
-        "Use only 3-letter words made from ا ب ت ث ج."
-      );
-    }
-
-    return words;
+    return saved.hbMode === "all"
+      ? allCombinations()
+      : validSavedWords(saved.hbWords);
   }
 
-  function getPool(data) {
-    if (data.hbMode === "all") {
-      return allCombinations();
-    }
-
-    const words = data.hbWords || DEFAULT_WORDS;
-
-    return Array.isArray(words) && words.length
-      ? validWords(words.join(" "))
-      : [...DEFAULT_WORDS];
-  }
-
-  // NEW RANDOM WORD
+  // RANDOMIZE WITHOUT ج
 
   async function randomize() {
+
     await db.runTransaction(async tx => {
-      const [liveSnap,settingSnap] = await Promise.all([
-        tx.get(liveRef),
-        tx.get(settingsRef)
-      ]);
 
-      const current = liveSnap.data() || {};
-      const saved = settingSnap.data() || {};
+      const [roundSnap, settingSnap] =
+        await Promise.all([
+          tx.get(liveRef),
+          tx.get(settingsRef)
+        ]);
 
-      const currentStage = current.hbStage || "idle";
+      const current =
+        roundSnap.data() || {};
 
-      if (currentStage === "running") {
+      const saved =
+        settingSnap.data() || {};
+
+      if (current.hbStage === "running") {
         throw Error(
-          "Finish or cancel the current round first."
+          "Finish or cancel this round first."
         );
       }
 
-      const pool = getPool(saved);
+      const pool = poolFrom(saved);
 
-      const used = Array.isArray(current.hbUsedWords)
-        ? current.hbUsedWords.filter(w => pool.includes(w))
-        : [];
+      let used =
+        Array.isArray(current.hbUsedWords)
+          ? current.hbUsedWords.filter(
+              w => pool.includes(w)
+            )
+          : [];
 
-      let available = pool.filter(w => !used.includes(w));
-      let newCycle = [...used];
-
-      if (!available.length) {
-        newCycle = [];
-        available = pool.filter(w => w !== current.hbWord);
-      }
+      let available =
+        pool.filter(w => !used.includes(w));
 
       if (!available.length) {
-        available = [...pool];
+
+        used = [];
+
+        available = pool.filter(
+          w => w !== current.hbWord
+        );
+
+        if (!available.length) {
+          available = [...pool];
+        }
       }
 
       const word =
-        available[Math.floor(Math.random() * available.length)];
+        available[
+          Math.floor(
+            Math.random() * available.length
+          )
+        ];
 
-      newCycle.push(word);
+      used.push(word);
 
-      const sec = Number(saved.hbDurationSec || 90);
+      tx.set(liveRef, {
 
-      tx.set(liveRef,{
-        hbStage:"ready",
-        hbWord:word,
-        hbDurationSec:sec,
-        hbStartedAt:null,
-        hbUsedWords:newCycle,
-        hbRoundId:Number(current.hbRoundId || 0) + 1,
-        hbLastOutcome:""
-      },{merge:true});
+        hbStage: "ready",
+
+        hbWord: word,
+
+        hbStartedAt: null,
+
+        hbDurationSec:
+          Number(saved.hbDurationSec || 90),
+
+        hbUsedWords: used,
+
+        hbRoundId:
+          Number(current.hbRoundId || 0) + 1,
+
+        hbLastOutcome: ""
+
+      }, {merge: true});
     });
 
-    message("New Arabic word generated. Start the timer.");
+    message(
+      "New word generated using only ا ب ت ث."
+    );
   }
 
-  // START ROUND
+  // START TIMER
 
   async function startRound() {
+
     await db.runTransaction(async tx => {
+
       const snap = await tx.get(liveRef);
+
       const current = snap.data() || {};
 
       if (
         current.hbStage !== "ready" ||
-        !current.hbWord
+        !WORD_RE.test(current.hbWord || "")
       ) {
-        throw Error("Randomize a word before starting.");
+        throw Error(
+          "Press NEW WORD first to get " +
+          "a word without ج."
+        );
       }
 
-      tx.set(liveRef,{
-        hbStage:"running",
-        hbStartedAt:FV.serverTimestamp()
-      },{merge:true});
+      tx.set(liveRef, {
+
+        hbStage: "running",
+
+        hbStartedAt:
+          FV.serverTimestamp()
+
+      }, {merge: true});
     });
 
-    message("Timer started. Hit the correct boxes!");
+    message("Timer started!");
   }
 
-  // FINISH ROUND
+  // WON OR NOT WON
 
   async function finishRound(won) {
+
     const recordRef = historyRef.doc();
 
     await db.runTransaction(async tx => {
-      const [liveSnap,statsSnap] = await Promise.all([
-        tx.get(liveRef),
-        tx.get(statsRef)
-      ]);
 
-      const current = liveSnap.data() || {};
-      const currentStats = statsSnap.data() || {};
+      const [roundSnap, statSnap] =
+        await Promise.all([
+          tx.get(liveRef),
+          tx.get(statsRef)
+        ]);
+
+      const round =
+        roundSnap.data() || {};
+
+      const stat =
+        statSnap.data() || {};
 
       if (
-        current.hbStage !== "running" ||
-        !current.hbStartedAt?.toMillis
+        round.hbStage !== "running" ||
+        !millis(round.hbStartedAt)
       ) {
-        throw Error("There is no active round.");
+        throw Error(
+          "There is no active round."
+        );
       }
 
-      const sec = Number(current.hbDurationSec || 90);
+      if (
+        !WORD_RE.test(round.hbWord || "")
+      ) {
+        throw Error(
+          "Old round contains an unavailable letter. " +
+          "Cancel and choose NEW WORD."
+        );
+      }
+
+      const secs =
+        Number(round.hbDurationSec || 90);
 
       const elapsed = Math.max(
         0,
-        (Date.now() - current.hbStartedAt.toMillis()) / 1000
+        (
+          Date.now() -
+          millis(round.hbStartedAt)
+        ) / 1000
       );
 
-      if (won && elapsed >= sec) {
+      if (won && elapsed >= secs) {
         throw Error(
-          "Time has expired. Choose NOT WON."
+          "Time is up. Choose NOT WON."
         );
       }
-
-      const total = currentStats.hbStockTotal;
-      const given = Number(currentStats.hbChocolates || 0);
 
       if (
         won &&
-        Number.isSafeInteger(total) &&
-        given >= total
+        Number.isSafeInteger(
+          stat.hbStockTotal
+        ) &&
+        Number(stat.hbChocolates || 0) >=
+          stat.hbStockTotal
       ) {
         throw Error(
-          "No Hit the Box chocolates remaining."
+          "Hit the Box has no chocolates left."
         );
       }
 
-      tx.set(recordRef,{
-        gameType:"hit-box",
-        word:current.hbWord || "",
-        roundId:Number(current.hbRoundId || 0),
-        outcome:won ? "won" : "lost",
-        chocolate:won ? 1 : 0,
-        durationSec:sec,
-        elapsedSec:Math.min(sec,Math.round(elapsed)),
-        at:FV.serverTimestamp()
+      // SAVE RESULT
+
+      tx.set(recordRef, {
+
+        gameType: GAME,
+
+        word: round.hbWord,
+
+        roundId:
+          Number(round.hbRoundId || 0),
+
+        outcome:
+          won ? "won" : "lost",
+
+        chocolate:
+          won ? 1 : 0,
+
+        durationSec: secs,
+
+        elapsedSec:
+          Math.min(secs, Math.round(elapsed)),
+
+        at: FV.serverTimestamp()
+
       });
 
-      tx.set(statsRef,{
-        hbPlayed:FV.increment(1),
-        hbWins:FV.increment(won ? 1 : 0),
-        hbLosses:FV.increment(won ? 0 : 1),
-        hbChocolates:FV.increment(won ? 1 : 0)
-      },{merge:true});
+      // UPDATE CHOCOLATE COUNTERS
 
-      tx.set(liveRef,{
-        hbStage:"idle",
-        hbWord:"",
-        hbStartedAt:null,
-        hbLastOutcome:won ? "won" : "lost",
-        hbLastResultAt:FV.serverTimestamp()
-      },{merge:true});
+      tx.set(statsRef, {
+
+        hbPlayed: FV.increment(1),
+
+        hbWins:
+          FV.increment(won ? 1 : 0),
+
+        hbLosses:
+          FV.increment(won ? 0 : 1),
+
+        hbChocolates:
+          FV.increment(won ? 1 : 0)
+
+      }, {merge: true});
+
+      // END CURRENT ROUND
+
+      tx.set(liveRef, {
+
+        hbStage: "idle",
+
+        hbWord: "",
+
+        hbStartedAt: null,
+
+        hbLastOutcome:
+          won ? "won" : "lost",
+
+        hbLastResultAt:
+          FV.serverTimestamp()
+
+      }, {merge: true});
     });
 
     message(
       won
-        ? "🍫 WON! One chocolate recorded."
-        : "NOT WON recorded. No chocolate awarded."
+        ? "🍫 WON — one chocolate recorded."
+        : "NOT WON — no chocolate."
     );
   }
 
-  // CANCEL WITHOUT RECORDING
+  // CANCEL CURRENT ROUND
 
   async function cancelRound() {
+
     if (!confirm(
       "Cancel this round without recording a result?"
-    )) return;
+    )) {
+      return;
+    }
 
     await db.runTransaction(async tx => {
+
       const snap = await tx.get(liveRef);
-      const current = snap.data() || {};
+
+      const state = snap.data() || {};
 
       if (
-        current.hbStage !== "running" &&
-        current.hbStage !== "ready"
-      ) return;
+        state.hbStage !== "running" &&
+        state.hbStage !== "ready"
+      ) {
+        return;
+      }
 
-      tx.set(liveRef,{
-        hbStage:"idle",
-        hbWord:"",
-        hbStartedAt:null
-      },{merge:true});
+      tx.set(liveRef, {
+
+        hbStage: "idle",
+
+        hbWord: "",
+
+        hbStartedAt: null
+
+      }, {merge: true});
     });
 
-    message("Round cancelled. No chocolate counted.");
+    message(
+      "Round cancelled; no chocolate counted."
+    );
   }
 
   // SAVE TIMER
 
-  async function saveTime() {
-    // Read the typed value BEFORE rendering again.
+  async function saveTimer() {
 
-    const sec = parseTime($("hbDurationInput").value);
+    const secs =
+      parseTime($("hbDurationInput").value);
 
     await db.runTransaction(async tx => {
+
       const snap = await tx.get(liveRef);
-      const current = snap.data() || {};
 
-      tx.set(settingsRef,{
-        hbDurationSec:sec
-      },{merge:true});
+      tx.set(settingsRef, {
+        hbDurationSec: secs
+      }, {merge: true});
 
-      if (current.hbStage === "idle" || !current.hbStage) {
-        tx.set(liveRef,{
-          hbDurationSec:sec
-        },{merge:true});
+      if (
+        !snap.data()?.hbStage ||
+        snap.data().hbStage === "idle"
+      ) {
+        tx.set(liveRef, {
+          hbDurationSec: secs
+        }, {merge: true});
       }
     });
 
-    settings.hbDurationSec = sec;
-    timeDirty = false;
-    $("hbDurationInput").value = formatTime(sec);
+    settings.hbDurationSec = secs;
 
-    message("✅ Timer saved: " + formatTime(sec));
+    timeDirty = false;
+
+    $("hbDurationInput").value =
+      formatTime(secs);
+
+    message(
+      "✅ Timer saved: " + formatTime(secs)
+    );
   }
 
-  // SAVE WORDS AND MODE
+  // SAVE WORD BANK
 
   async function saveWords() {
-    const words = validWords($("hbWordsInput").value);
+
+    const words =
+      parseNewWords($("hbWordsInput").value);
+
     const mode = $("hbMode").value;
 
     await db.runTransaction(async tx => {
+
       const snap = await tx.get(liveRef);
 
-      if (snap.data()?.hbStage === "running") {
+      if (
+        snap.data()?.hbStage === "running"
+      ) {
         throw Error(
-          "Finish or cancel the active round first."
+          "Finish the active round first."
         );
       }
 
-      tx.set(settingsRef,{
-        hbWords:words,
-        hbMode:mode
-      },{merge:true});
+      tx.set(settingsRef, {
 
-      tx.set(liveRef,{
-        hbUsedWords:[],
-        hbStage:"idle",
-        hbWord:"",
-        hbStartedAt:null
-      },{merge:true});
+        hbWords: words,
+
+        hbMode: mode
+
+      }, {merge: true});
+
+      tx.set(liveRef, {
+
+        hbStage: "idle",
+
+        hbWord: "",
+
+        hbUsedWords: [],
+
+        hbStartedAt: null
+
+      }, {merge: true});
     });
 
     settings.hbWords = words;
@@ -476,215 +718,297 @@
     wordsDirty = false;
     modeDirty = false;
 
-    message("Word bank and randomizer mode saved.");
+    message(
+      "Word bank saved — ج excluded."
+    );
   }
 
-  // RESET USED WORDS ONLY
+  // RESET USED WORDS
 
-  async function resetCycle() {
-    if (!confirm("Reset the used-word cycle?")) return;
+  async function resetUsedWords() {
 
-    await db.runTransaction(async tx => {
-      const snap = await tx.get(liveRef);
-
-      if (snap.data()?.hbStage === "running") {
-        throw Error("Finish the active round first.");
-      }
-
-      tx.set(liveRef,{
-        hbUsedWords:[]
-      },{merge:true});
-    });
-
-    message("Used words reset. Records are unchanged.");
-  }
-
-  // STOCK
-
-  async function saveStock() {
-    const raw = $("hbStockInput").value.trim();
-    const total = Number(raw);
-
-    if (
-      !raw ||
-      !Number.isSafeInteger(total) ||
-      total < 0
-    ) {
-      throw Error("Enter a valid whole-number stock.");
+    if (!confirm(
+      "Reset the randomizer cycle?"
+    )) {
+      return;
     }
 
     await db.runTransaction(async tx => {
-      const snap = await tx.get(statsRef);
-      const given = Number(snap.data()?.hbChocolates || 0);
 
-      if (total < given) {
+      const snap = await tx.get(liveRef);
+
+      if (
+        snap.data()?.hbStage === "running"
+      ) {
         throw Error(
-          "Total stock cannot be below " +
-          given +
-          " chocolates already given."
+          "Finish the active round first."
         );
       }
 
-      tx.set(statsRef,{
-        hbStockTotal:total
-      },{merge:true});
+      tx.set(liveRef, {
+        hbUsedWords: []
+      }, {merge: true});
+    });
+
+    message(
+      "Used words reset. History preserved."
+    );
+  }
+
+  // SAVE CHOCOLATE STOCK
+
+  async function saveStock() {
+
+    const raw =
+      $("hbStockInput").value.trim();
+
+    const amount = Number(raw);
+
+    if (
+      !raw ||
+      !Number.isSafeInteger(amount) ||
+      amount < 0
+    ) {
+      throw Error(
+        "Enter a whole number for stock."
+      );
+    }
+
+    await db.runTransaction(async tx => {
+
+      const snap = await tx.get(statsRef);
+
+      const given =
+        Number(
+          snap.data()?.hbChocolates || 0
+        );
+
+      if (amount < given) {
+        throw Error(
+          "Stock cannot be below " +
+          given +
+          " chocolates already awarded."
+        );
+      }
+
+      tx.set(statsRef, {
+        hbStockTotal: amount
+      }, {merge: true});
     });
 
     $("hbStockInput").value = "";
-    message("Hit the Box stock saved.");
+
+    message("Chocolate stock saved.");
   }
 
   // SESSION COUNTERS
 
-  function sessionCount(key) {
-    const base =
-      "hbBase" +
-      key.slice(2);
+  function sessionCount(field) {
+
+    const baseline =
+      "hbBase" + field.slice(2);
 
     return Math.max(
       0,
-      Number(stats[key] || 0) -
-      Number(stats[base] || 0)
+      Number(stats[field] || 0) -
+      Number(stats[baseline] || 0)
     );
   }
 
-  function belongsToSession(record) {
-    const start = millis(live.hbSessionStartedAt);
+  function isCurrentRecord(record) {
 
-    return !start || millis(record.at) > start;
+    const start =
+      millis(live.hbSessionStartedAt);
+
+    return !start ||
+      millis(record.at) > start;
   }
 
-  // RESET SESSION, NOT LIFETIME TOTALS
+  // RESET SESSION WITHOUT DELETING HISTORY
 
   async function resetSession() {
+
     if (!statsReady || !historyReady) {
-      throw Error("Wait for the records to finish loading.");
+      throw Error(
+        "Wait for history and statistics to load."
+      );
     }
 
     if (!confirm(
-      "Start a NEW Hit the Box session?\n\n" +
-      "Displayed counts restart from zero.\n" +
-      "Old records and chocolates stay saved."
-    )) return;
-
-    await db.runTransaction(async tx => {
-      const [liveSnap,statsSnap] = await Promise.all([
-        tx.get(liveRef),
-        tx.get(statsRef)
-      ]);
-
-      if (liveSnap.data()?.hbStage === "running") {
-        throw Error("Finish the current round first.");
-      }
-
-      const s = statsSnap.data() || {};
-
-      tx.set(statsRef,{
-        hbBasePlayed:Number(s.hbPlayed || 0),
-        hbBaseWins:Number(s.hbWins || 0),
-        hbBaseLosses:Number(s.hbLosses || 0),
-        hbBaseChocolates:Number(s.hbChocolates || 0)
-      },{merge:true});
-
-      tx.set(liveRef,{
-        hbSessionStartedAt:FV.serverTimestamp(),
-        hbStage:"idle",
-        hbWord:"",
-        hbStartedAt:null,
-        hbLastOutcome:""
-      },{merge:true});
-    });
-
-    message(
-      "New session started. Previous data and stock preserved."
-    );
-  }
-
-  // DISPLAY HISTORY
-
-  function dateText(value) {
-    return value?.toDate
-      ? value.toDate().toLocaleString("en-US",{
-          dateStyle:"medium",
-          timeStyle:"short"
-        })
-      : "Saving…";
-  }
-
-  function sortedRecords() {
-    return [...records].sort(
-      (a,b) => millis(b.at) - millis(a.at)
-    );
-  }
-
-  function renderHistory() {
-    if (!isAdmin || !authorized) return;
-
-    const tbody = $("hbRecords");
-    tbody.replaceChildren();
-
-    const items = sortedRecords()
-      .filter(belongsToSession)
-      .slice(0,100);
-
-    if (!items.length) {
-      const cell = tbody.insertRow().insertCell();
-      cell.colSpan = 5;
-      cell.textContent = "No rounds in this session.";
+      "Reset Hit the Box SESSION?\n" +
+      "Previous records and awarded chocolates " +
+      "stay saved."
+    )) {
       return;
     }
 
-    for (const item of items) {
-      const row = tbody.insertRow();
+    await db.runTransaction(async tx => {
+
+      const [liveSnap, statSnap] =
+        await Promise.all([
+          tx.get(liveRef),
+          tx.get(statsRef)
+        ]);
+
+      if (
+        liveSnap.data()?.hbStage === "running"
+      ) {
+        throw Error(
+          "Finish the active round first."
+        );
+      }
+
+      const s = statSnap.data() || {};
+
+      tx.set(statsRef, {
+
+        hbBasePlayed:
+          Number(s.hbPlayed || 0),
+
+        hbBaseWins:
+          Number(s.hbWins || 0),
+
+        hbBaseLosses:
+          Number(s.hbLosses || 0),
+
+        hbBaseChocolates:
+          Number(s.hbChocolates || 0)
+
+      }, {merge: true});
+
+      tx.set(liveRef, {
+
+        hbStage: "idle",
+
+        hbWord: "",
+
+        hbStartedAt: null,
+
+        hbSessionStartedAt:
+          FV.serverTimestamp()
+
+      }, {merge: true});
+    });
+
+    message(
+      "Session reset. Historical records " +
+      "and chocolate stock preserved."
+    );
+  }
+
+  // DATE FORMAT
+
+  function dateText(stamp) {
+
+    return stamp?.toDate?.()
+      ? stamp.toDate().toLocaleString(
+          "en-US", {
+            dateStyle: "medium",
+            timeStyle: "short"
+          }
+        )
+      : "Saving…";
+  }
+
+  // SHOW RECENT HISTORY
+
+  function renderHistory() {
+
+    if (!adminPage || !authorized) return;
+
+    const body = $("hbRecords");
+
+    body.replaceChildren();
+
+    const rows = [...history]
+      .filter(isCurrentRecord)
+      .sort((a, b) =>
+        millis(b.at) - millis(a.at)
+      )
+      .slice(0, 100);
+
+    if (!rows.length) {
+
+      const cell =
+        body.insertRow().insertCell();
+
+      cell.colSpan = 5;
+
+      cell.textContent =
+        "No rounds this session.";
+
+      return;
+    }
+
+    for (const item of rows) {
+
+      const row = body.insertRow();
 
       [
         dateText(item.at),
+
         item.word || "—",
-        item.outcome === "won" ? "WON" : "NOT WON",
+
+        item.outcome === "won"
+          ? "WON"
+          : "NOT WON",
+
         item.chocolate || 0,
+
         formatTime(item.elapsedSec || 0)
+
       ].forEach(value => {
-        row.insertCell().textContent = String(value);
+
+        row.insertCell().textContent =
+          String(value);
+
       });
     }
   }
 
-  // CSV EXPORT
+  // SAFE CSV EXPORT
 
   function csvCell(value) {
-    let text = String(value ?? "");
 
-    if (/^\s*[=+@\-]/.test(text)) {
-      text = "'" + text;
+    let s = String(value ?? "");
+
+    if (/^\s*[=+@\-]/.test(s)) {
+      s = "'" + s;
     }
 
-    return '"' + text.replaceAll('"','""') + '"';
+    return '"' +
+      s.replaceAll('"', '""') +
+      '"';
   }
 
   async function exportCSV(all) {
-    const snap = await historyRef
-      .where("gameType","==","hit-box")
-      .get();
 
-    const allRecords = snap.docs.map(d => d.data());
+    const snap =
+      await historyRef
+        .where("gameType", "==", GAME)
+        .get();
 
-    const chosen = all
-      ? allRecords
-      : allRecords.filter(belongsToSession);
-
-    chosen.sort((a,b) => millis(b.at) - millis(a.at));
+    const records = snap.docs
+      .map(doc => doc.data())
+      .filter(x =>
+        all || isCurrentRecord(x)
+      )
+      .sort((a, b) =>
+        millis(b.at) - millis(a.at)
+      );
 
     const rows = [[
       "Date",
       "Round",
-      "Arabic Word",
+      "Arabic word",
       "Result",
       "Chocolates",
-      "Duration Seconds",
-      "Time Used Seconds"
+      "Time allowed (s)",
+      "Time used (s)"
     ]];
 
-    chosen.forEach(x => {
+    for (const x of records) {
+
       rows.push([
         x.at?.toDate?.().toISOString() || "",
         x.roundId || "",
@@ -694,350 +1018,536 @@
         x.durationSec || 0,
         x.elapsedSec || 0
       ]);
-    });
+    }
 
     const csv = "\uFEFF" +
-      rows.map(row => row.map(csvCell).join(","))
-        .join("\r\n");
+      rows.map(r =>
+        r.map(csvCell).join(",")
+      ).join("\r\n");
 
-    const blob = new Blob(
-      [csv],
-      {type:"text/csv;charset=utf-8"}
+    const url = URL.createObjectURL(
+      new Blob(
+        [csv],
+        {type: "text/csv;charset=utf-8"}
+      )
     );
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const a = document.createElement("a");
 
-    link.href = url;
-    link.download = all
-      ? "edex-hit-box-all-history.csv"
-      : "edex-hit-box-session.csv";
+    a.href = url;
 
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    a.download = all
+      ? "hitbox-all-history.csv"
+      : "hitbox-session.csv";
 
-    setTimeout(() => URL.revokeObjectURL(url),1000);
+    document.body.appendChild(a);
+
+    a.click();
+    a.remove();
+
+    setTimeout(
+      () => URL.revokeObjectURL(url),
+      1000
+    );
 
     message("CSV exported.");
   }
 
-  // MAIN SCREEN RENDER
+  // UPDATE VISITOR AND ADMIN SCREENS
 
   function render() {
-    const currentStage = stage();
-    const left = currentStage === "expired" ? 0 : timeLeft();
+
+    const status = stage();
+
+    const displayedWord =
+      WORD_RE.test(live.hbWord || "")
+        ? live.hbWord
+        : "✦";
 
     if ($("hitWord")) {
-      $("hitWord").textContent = live.hbWord || "✦";
+      $("hitWord").textContent =
+        displayedWord;
     }
 
     if ($("hitClock")) {
-      $("hitClock").textContent = formatTime(left);
+
+      $("hitClock").textContent =
+        formatTime(
+          status === "expired"
+            ? 0
+            : timeLeft()
+        );
     }
 
     if ($("hitStage")) {
       $("hitStage").textContent =
-        currentStage.toUpperCase();
+        status.toUpperCase();
     }
 
     if ($("hitRoundNumber")) {
+
       $("hitRoundNumber").textContent =
-        "Round " + Number(live.hbRoundId || 0);
+        "Round " +
+        Number(live.hbRoundId || 0);
     }
 
     if ($("hitResult")) {
+
       const fresh =
-        millis(live.hbLastResultAt) > 0 &&
-        Date.now() - millis(live.hbLastResultAt) < 8000;
+        millis(live.hbLastResultAt) &&
+        Date.now() -
+        millis(live.hbLastResultAt) < 8000;
 
-      let result = "Randomize a word to start.";
+      let result =
+        "Randomize a word to begin.";
 
-      if (currentStage === "ready") {
-        result = "Word ready. Start the timer.";
-      } else if (currentStage === "running") {
-        result = "Hit the letters before time runs out!";
-      } else if (currentStage === "expired") {
-        result = "TIME UP — record NOT WON.";
-      } else if (fresh && live.hbLastOutcome === "won") {
+      if (
+        (status === "ready" ||
+         status === "running") &&
+        !WORD_RE.test(live.hbWord || "")
+      ) {
+
+        result =
+          "Old word uses an unavailable letter. " +
+          "Cancel this round, then choose NEW WORD.";
+
+      } else if (status === "ready") {
+
+        result =
+          "Word ready. Start the timer.";
+
+      } else if (status === "running") {
+
+        result =
+          "Hit the correct letter boxes!";
+
+      } else if (status === "expired") {
+
+        result =
+          "TIME UP — choose NOT WON.";
+
+      } else if (
+        fresh &&
+        live.hbLastOutcome === "won"
+      ) {
+
         result = "🍫 CHOCOLATE WON!";
-      } else if (fresh && live.hbLastOutcome === "lost") {
-        result = "✕ NOT WON";
+
+      } else if (
+        fresh &&
+        live.hbLastOutcome === "lost"
+      ) {
+
+        result = "NOT WON";
       }
 
       $("hitResult").textContent = result;
     }
 
-    for (const id of [
-      "hitRandomBtn",
-      "hitStartBtn",
-      "hitWonBtn",
-      "hitFailedBtn",
-      "hitCancelBtn"
-    ]) {
-      if ($(id)) $(id).disabled = !authorized || busy;
-    }
+    const can = {
 
-    if ($("hitRandomBtn")) {
-      $("hitRandomBtn").disabled =
-        !authorized || busy ||
-        currentStage === "running" ||
-        currentStage === "expired";
-    }
+      hitRandomBtn:
+        status !== "running" &&
+        status !== "expired",
 
-    if ($("hitStartBtn")) {
-      $("hitStartBtn").disabled =
-        !authorized || busy ||
-        currentStage !== "ready";
-    }
+      hitStartBtn:
+        status === "ready" &&
+        WORD_RE.test(live.hbWord || ""),
 
-    if ($("hitWonBtn")) {
-      $("hitWonBtn").disabled =
-        !authorized || busy ||
-        currentStage !== "running";
-    }
+      hitWonBtn:
+        status === "running" &&
+        WORD_RE.test(live.hbWord || ""),
 
-    if ($("hitFailedBtn")) {
-      $("hitFailedBtn").disabled =
-        !authorized || busy ||
-        !["running","expired"].includes(currentStage);
-    }
+      hitFailedBtn:
+        status === "running" ||
+        status === "expired",
 
-    if ($("hitCancelBtn")) {
-      $("hitCancelBtn").disabled =
-        !authorized || busy ||
-        currentStage === "idle";
+      hitCancelBtn:
+        status !== "idle"
+    };
+
+    for (const [id, enabled] of
+      Object.entries(can)) {
+
+      if ($(id)) {
+
+        $(id).disabled =
+          !authorized ||
+          busy ||
+          !enabled;
+      }
     }
 
     $("hitLogin").hidden = authorized;
 
-    if (isAdmin) {
-      $("hitAdmin").hidden = !authorized;
-    } else {
-      $("hitControls").hidden = !authorized;
-    }
+    if (adminPage) {
 
-    if (isAdmin && authorized) {
-      renderAdmin();
+      $("hitAdmin").hidden = !authorized;
+
+      if (authorized) {
+        renderAdmin();
+      }
+
+    } else {
+
+      $("hitControls").hidden =
+        !authorized;
     }
   }
 
-  // ADMIN COUNTERS AND SETTINGS
+  // ADMIN STATISTICS AND SETTINGS
 
   function renderAdmin() {
-    $("hbPlayed").textContent =
-      sessionCount("hbPlayed");
 
-    $("hbWins").textContent =
-      sessionCount("hbWins");
+    for (const id of [
+      "hbPlayed",
+      "hbWins",
+      "hbLosses",
+      "hbChocolates"
+    ]) {
 
-    $("hbLosses").textContent =
-      sessionCount("hbLosses");
-
-    $("hbChocolates").textContent =
-      sessionCount("hbChocolates");
+      $(id).textContent =
+        String(sessionCount(id));
+    }
 
     const total = stats.hbStockTotal;
+
     const tracked =
-      Number.isSafeInteger(total) && total >= 0;
+      Number.isSafeInteger(total) &&
+      total >= 0;
 
     $("hbStock").textContent =
-      tracked ? total : "Not set";
+      tracked
+        ? String(total)
+        : "Not set";
 
     $("hbRemaining").textContent =
       tracked
-        ? Math.max(
-            0,
-            total - Number(stats.hbChocolates || 0)
+        ? String(
+            Math.max(
+              0,
+              total -
+              Number(stats.hbChocolates || 0)
+            )
           )
         : "Not set";
 
-    // Never overwrite time being typed.
+    // DON'T OVERWRITE TIMER WHILE TYPING
 
     if (
       !timeDirty &&
-      document.activeElement !== $("hbDurationInput")
+      document.activeElement !==
+        $("hbDurationInput")
     ) {
+
       $("hbDurationInput").value =
-        formatTime(settings.hbDurationSec || 90);
+        formatTime(
+          settings.hbDurationSec || 90
+        );
     }
+
+    // AUTOMATICALLY FILTER OLD WORD BANKS
 
     if (
       !wordsDirty &&
-      document.activeElement !== $("hbWordsInput")
+      document.activeElement !==
+        $("hbWordsInput")
     ) {
+
       $("hbWordsInput").value =
-        (settings.hbWords || DEFAULT_WORDS).join("، ");
+        validSavedWords(
+          settings.hbWords
+        ).join("، ");
     }
 
     if (!modeDirty) {
-      $("hbMode").value = settings.hbMode || "words";
+
+      $("hbMode").value =
+        settings.hbMode === "all"
+          ? "all"
+          : "words";
     }
 
     for (const id of [
-      "hbSaveTime","hbSaveWords","hbResetCycle",
-      "hbSaveStock","hbSessionCsv","hbAllCsv",
+      "hbSaveTime",
+      "hbSaveWords",
+      "hbResetCycle",
+      "hbSaveStock",
+      "hbSessionCsv",
+      "hbAllCsv",
       "hbResetSession"
     ]) {
-      $(id).disabled = !authorized || busy;
-    }
 
-    renderHistory();
+      $(id).disabled =
+        !authorized || busy;
+    }
   }
 
   // ORGANIZER LOGIN
 
-  $("hitLoginForm").addEventListener("submit",async e => {
-    e.preventDefault();
-    $("hitLoginError").textContent = "";
+  $("hitLoginForm").addEventListener(
+    "submit",
+    async event => {
 
-    try {
-      const credential =
-        await auth.signInWithEmailAndPassword(
-          $("hitEmail").value.trim(),
-          $("hitPassword").value
-        );
+      event.preventDefault();
 
-      if (credential.user.uid !== ADMIN_UID) {
-        await auth.signOut();
-        throw Error("This is not the organizer account.");
+      $("hitLoginError").textContent = "";
+
+      try {
+
+        const info =
+          await auth.signInWithEmailAndPassword(
+            $("hitEmail").value.trim(),
+            $("hitPassword").value
+          );
+
+        if (
+          info.user.uid !== ADMIN_UID
+        ) {
+
+          await auth.signOut();
+
+          throw Error(
+            "This is not the organizer account."
+          );
+        }
+
+        $("hitPassword").value = "";
+
+      } catch (e) {
+
+        $("hitLoginError").textContent =
+          e?.message || "Login failed.";
       }
-
-      $("hitPassword").value = "";
-    } catch(err) {
-      $("hitLoginError").textContent =
-        err?.message || "Login failed.";
     }
-  });
+  );
+
+  // SIGN OUT
 
   $("hitLogout").onclick = () => {
-    if (!busy) auth.signOut();
+
+    if (!busy) {
+      auth.signOut();
+    }
   };
 
-  // CONNECT CONTROLS
+  // CONNECT ALL BUTTONS
 
-  function bind(id,work) {
-    $(id).addEventListener("click",() => perform(work));
+  function bind(id, fn) {
+
+    $(id).addEventListener(
+      "click",
+      () => perform(fn)
+    );
   }
 
-  bind("hitRandomBtn",randomize);
-  bind("hitStartBtn",startRound);
-  bind("hitWonBtn",() => finishRound(true));
-  bind("hitFailedBtn",() => finishRound(false));
-  bind("hitCancelBtn",cancelRound);
+  bind("hitRandomBtn", randomize);
 
-  if (isAdmin) {
+  bind("hitStartBtn", startRound);
+
+  bind(
+    "hitWonBtn",
+    () => finishRound(true)
+  );
+
+  bind(
+    "hitFailedBtn",
+    () => finishRound(false)
+  );
+
+  bind("hitCancelBtn", cancelRound);
+
+  if (adminPage) {
+
     $("hbDurationInput").addEventListener(
-      "input",() => { timeDirty = true; }
+      "input",
+      () => {
+        timeDirty = true;
+      }
     );
 
     $("hbWordsInput").addEventListener(
-      "input",() => { wordsDirty = true; }
+      "input",
+      () => {
+        wordsDirty = true;
+      }
     );
 
     $("hbMode").addEventListener(
-      "change",() => { modeDirty = true; }
+      "change",
+      () => {
+        modeDirty = true;
+      }
     );
 
-    bind("hbSaveTime",saveTime);
-    bind("hbSaveWords",saveWords);
-    bind("hbResetCycle",resetCycle);
-    bind("hbSaveStock",saveStock);
-    bind("hbResetSession",resetSession);
-    bind("hbSessionCsv",() => exportCSV(false));
-    bind("hbAllCsv",() => exportCSV(true));
+    bind("hbSaveTime", saveTimer);
+
+    bind("hbSaveWords", saveWords);
+
+    bind("hbResetCycle", resetUsedWords);
+
+    bind("hbSaveStock", saveStock);
+
+    bind("hbResetSession", resetSession);
+
+    bind(
+      "hbSessionCsv",
+      () => exportCSV(false)
+    );
+
+    bind(
+      "hbAllCsv",
+      () => exportCSV(true)
+    );
   }
 
-  // FIREBASE LIVE SYNCHRONIZATION
+  // LIVE FIREBASE LISTENER
 
   liveRef.onSnapshot(
+
     snap => {
+
       live = snap.data() || {};
 
       if ($("connection")) {
-        $("connection").textContent = "● LIVE";
+        $("connection").textContent =
+          "● LIVE";
       }
 
       render();
     },
-    err => {
+
+    e => {
+
       if ($("connection")) {
-        $("connection").textContent = "● OFFLINE";
+        $("connection").textContent =
+          "● OFFLINE";
       }
 
-      message("Live data: " + err.message,true);
+      message(
+        "Live: " + e.message,
+        true
+      );
     }
   );
 
+  // PRIVATE DATA LISTENERS
+
   function stopPrivate() {
-    unsubPrivate.forEach(fn => fn());
-    unsubPrivate = [];
+
+    privateListeners.forEach(fn => fn());
+
+    privateListeners = [];
   }
 
-  function watchPrivate() {
-    unsubPrivate.push(
+  function listenPrivate() {
+
+    privateListeners.push(
       settingsRef.onSnapshot(
+
         snap => {
+
           settings = {
-            hbDurationSec:90,
-            hbMode:"words",
-            hbWords:DEFAULT_WORDS,
+
+            hbDurationSec: 90,
+
+            hbMode: "words",
+
+            hbWords: DEFAULT_WORDS,
+
             ...(snap.data() || {})
           };
 
           render();
         },
-        err => message("Settings: " + err.message,true)
+
+        e => message(
+          "Settings: " + e.message,
+          true
+        )
       )
     );
 
-    if (!isAdmin) return;
+    if (!adminPage) return;
 
-    unsubPrivate.push(
+    privateListeners.push(
       statsRef.onSnapshot(
+
         snap => {
+
           stats = snap.data() || {};
+
           statsReady = true;
+
           render();
         },
-        err => message("Stats: " + err.message,true)
+
+        e => message(
+          "Statistics: " + e.message,
+          true
+        )
       )
     );
 
-    unsubPrivate.push(
+    privateListeners.push(
       historyRef
-        .where("gameType","==","hit-box")
+        .where("gameType", "==", GAME)
         .onSnapshot(
+
           snap => {
-            records = snap.docs.map(d => d.data());
+
+            history =
+              snap.docs.map(
+                doc => doc.data()
+              );
+
             historyReady = true;
+
             renderHistory();
           },
-          err => message("History: " + err.message,true)
+
+          e => message(
+            "History: " + e.message,
+            true
+          )
         )
     );
   }
 
-  auth.onAuthStateChanged(async user => {
-    stopPrivate();
+  // FIREBASE AUTHENTICATION
 
-    authorized = Boolean(
-      user && user.uid === ADMIN_UID
-    );
+  auth.onAuthStateChanged(
+    async user => {
 
-    if (user && !authorized) {
-      await auth.signOut();
-      return;
+      stopPrivate();
+
+      authorized = Boolean(
+        user &&
+        user.uid === ADMIN_UID
+      );
+
+      if (user && !authorized) {
+
+        await auth.signOut();
+        return;
+      }
+
+      if (authorized) {
+        listenPrivate();
+      }
+
+      render();
     }
+  );
 
-    if (authorized) {
-      watchPrivate();
-    }
+  // REMOVE ج FROM THE DISPLAY
 
-    render();
-  });
+  removeJeemFromScreen();
 
-  setInterval(render,200);
+  // KEEP COUNTDOWN MOVING
+
+  setInterval(render, 200);
+
   render();
 
 })();
